@@ -22,6 +22,11 @@ export class RoomManager {
     return this.rooms.get(code.trim().toUpperCase());
   }
 
+  dispose(): void {
+    for (const room of this.rooms.values()) room.dispose();
+    this.rooms.clear();
+  }
+
   sweep(now: number): void {
     for (const [code, room] of this.rooms) {
       if (!room.hasConnectedHumans() && now - room.lastHumanSeenAt > this.deps.cfg.roomIdleMs) {

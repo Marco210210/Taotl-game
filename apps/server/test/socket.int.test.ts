@@ -71,24 +71,44 @@ describe('Socket.IO', () => {
     expect(first.hostId).toBe(first.me);
     await waitFor(b, (v) => v.seats.length === 2);
 
-    let checks = 0;
-    const checkLeak = (viewer: Client, other: Client, v: RoomView) => {
-      const g = app.manager.get(code)?.game;
-      if (!g || !v.game || !other.latest) return;
-      // le mani si svuotano soltanto: il confronto e valido a parita di mano
-      if (g.handNumber !== v.game.handNumber) return;
-      const otherId = other.latest.me;
-      const otherHand = g.players.find((p) => p.id === otherId)?.hand ?? [];
-      const json = JSON.stringify(v);
-      for (const card of otherHand) expect(json.includes(cardId(card))).toBe(false);
-      checks++;
-      void viewer;
+    // Controllo al momento dell'emissione: lo stato della Room e quello da cui nasce la vista.
+    const checks: Record<string, number> = {};
+    const aId = first.me;
+    const idsOf = (v: RoomView): string[] => {
+      const g = v.game;
+      if (!g) return [];
+      return [
+        ...g.hand.map(cardId),
+        ...g.currentTrick.map((pc) => cardId(pc.card)),
+        ...g.tricksThisHand.flatMap((t) => t.cards.map((pc) => cardId(pc.card))),
+        ...g.playableCardIds,
+      ];
     };
+    for (const srv of app.io.sockets.sockets.values()) {
+      const orig = srv.emit.bind(srv) as (ev: string, ...args: unknown[]) => boolean;
+      (srv as unknown as { emit: typeof orig }).emit = (ev, ...args) => {
+        const v = args[0] as RoomView;
+        const g = app.manager.get(code)?.game;
+        if (ev === 'room:state' && g && v.game) {
+          const other = g.players.find((p) => p.id !== v.me);
+          const otherIds = new Set((other?.hand ?? []).map(cardId));
+          const leftIds = new Set(g.leftover.map(cardId));
+          for (const id of idsOf(v)) {
+            expect(otherIds.has(id)).toBe(false);
+            expect(leftIds.has(id)).toBe(false);
+          }
+          if (otherIds.size > 0) {
+            const key = `${v.me === aId ? 'A' : 'B'}:${v.game.phase}`;
+            checks[key] = (checks[key] ?? 0) + 1;
+          }
+        }
+        return orig(ev, ...args);
+      };
+    }
 
-    const play = (c: Client, other: Client, host: boolean) => {
+    const play = (c: Client, host: boolean) => {
       c.on('room:state', (v) => {
-        checkLeak(c, other, v);
-        const g = v.game;
+                const g = v.game;
         if (!g) return;
         if (g.turnId === v.me && (g.phase === 'bidding' || g.phase === 'playing')) {
           rawEmit(c, 'game:intent', botMove(g), () => {});
@@ -97,15 +117,22 @@ describe('Socket.IO', () => {
         }
       });
     };
-    play(a, b, true);
-    play(b, a, false);
+    play(a, true);
+    play(b, false);
 
     expect((await emitAck(a, 'game:start')).ok).toBe(true);
     const endA = await waitFor(a, (v) => v.status === 'ended', 30000);
     const endB = await waitFor(b, (v) => v.status === 'ended', 30000);
     expect(endA.game?.phase).toBe('gameOver');
     expect(endA.game?.players.map((p) => p.total)).toEqual(endB.game?.players.map((p) => p.total));
-    expect(checks).toBeGreaterThan(10);
+    for (const who of ['A', 'B']) {
+      const total = Object.entries(checks)
+        .filter(([k]) => k.startsWith(who))
+        .reduce((n, [, c]) => n + c, 0);
+      expect(total).toBeGreaterThanOrEqual(36);
+      expect(checks[`${who}:bidding`]).toBeGreaterThan(0);
+      expect(checks[`${who}:playing`]).toBeGreaterThan(0);
+    }
   }, 40000);
 
   it('riconnessione: B chiude il socket e ne riapre uno con room:join {code, token}', async () => {
@@ -141,6 +168,26 @@ describe('Socket.IO', () => {
     expect(seat?.connected).toBe(true);
     expect(seat?.socketId).toBe(b2.id);
     expect(a.latest?.seats.find((s) => s.id === bId)?.connected).toBe(true);
+  });
+
+  it('room:join dello stesso socket sul proprio posto: resta host e connesso, senza pausa', async () => {
+    const url = await boot();
+    const a = await open(url);
+    const created = await emitAck(a, 'room:create', { nickname: 'Anna' });
+    const code = created.code as string;
+    const b = await open(url);
+    await emitAck(b, 'room:join', { code, nickname: 'Beppe' });
+    expect((await emitAck(a, 'room:join', { code, token: created.token })).ok).toBe(true);
+    // un join fallito non deve lasciare il posto disconnesso
+    expect((await emitAck(a, 'room:join', { code: 'ZZZZ', nickname: 'X' })).ok).toBe(false);
+    await new Promise((r) => setTimeout(r, 50));
+    const room = app.manager.get(code);
+    const seat = room?.seats[0];
+    expect(room?.hostId).toBe(seat?.id);
+    expect(seat?.connected).toBe(true);
+    expect(seat?.socketId).toBe(a.id);
+    expect(room?.pauseInfo()).toBeNull();
+    expect((await emitAck(a, 'lobby:addBot')).ok).toBe(true);
   });
 
   it('room:join su codice inesistente: room-not-found', async () => {

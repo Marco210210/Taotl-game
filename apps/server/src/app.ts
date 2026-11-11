@@ -60,6 +60,7 @@ export function createApp(cfg: ServerConfig): App {
     manager,
     close: async () => {
       clearInterval(sweep);
+      manager.dispose();
       await io.close();
     },
   };

@@ -54,9 +54,9 @@ export function attachSocket(io: IoServer, manager: RoomManager): void {
 
     on('room:create', (p) => {
       if (!isObj(p) || !isStr(p.nickname)) return BAD;
-      unbind();
       const r = manager.createRoom(p.nickname);
       if (!r.ok) return r;
+      unbind();
       bind(r.room, r.playerId);
       return { ok: true, code: r.room.code, token: r.token };
     });
@@ -65,11 +65,13 @@ export function attachSocket(io: IoServer, manager: RoomManager): void {
       if (!isObj(p) || !isStr(p.code)) return BAD;
       if (p.nickname !== undefined && !isStr(p.nickname)) return BAD;
       if (p.token !== undefined && !isStr(p.token)) return BAD;
-      unbind();
       const room = manager.get(p.code);
       if (!room) return { ok: false, error: 'room-not-found' };
       const r = room.join(p.nickname, p.token);
       if (!r.ok) return r;
+      // stesso socket sullo stesso posto: niente unbind (non deve risultare disconnesso)
+      const cur = socket.data as { code?: string; playerId?: string };
+      if (!(cur.code === room.code && cur.playerId === r.playerId)) unbind();
       bind(room, r.playerId);
       return { ok: true, token: r.token };
     });
