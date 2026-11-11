@@ -137,9 +137,9 @@ export class Room {
     const g = this.lobbyHostGuard(by);
     if (g) return g;
     if (this.seats.length >= MAX_SEATS) return { ok: false, error: 'room-full' };
-    const used = new Set(this.seats.filter((s) => s.isBot).map((s) => s.nickname));
+    const used = new Set(this.seats.map((s) => s.nickname.toLowerCase()));
     let n = 1;
-    while (used.has(`Bot ${n}`)) n++;
+    while (used.has(`bot ${n}`)) n++;
     this.seats.push({ id: newPlayerId(), nickname: `Bot ${n}`, isBot: true, connected: true, botControlled: false });
     this.changed();
     return { ok: true };

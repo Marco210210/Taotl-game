@@ -19,7 +19,7 @@ export class RoomManager {
   }
 
   get(code: string): Room | undefined {
-    return this.rooms.get(code.toUpperCase());
+    return this.rooms.get(code.trim().toUpperCase());
   }
 
   sweep(now: number): void {

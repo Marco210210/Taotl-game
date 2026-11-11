@@ -98,6 +98,18 @@ describe('Room lobby', () => {
     for (let i = 0; i < 9; i++) expect(room.addBot(a.playerId).ok).toBe(true);
     expect(room.addBot(a.playerId)).toEqual({ ok: false, error: 'room-full' });
   });
+  it('addBot non duplica il nickname di un umano', () => {
+    const { room } = mk();
+    const a = joined(room, 'bot 1');
+    room.addBot(a.playerId);
+    expect(room.seats.map((s) => s.nickname)).toEqual(['bot 1', 'Bot 2']);
+  });
+  it('umano con 12 posti (anche bot): room-full', () => {
+    const { room } = mk();
+    const a = joined(room, 'Anna');
+    for (let i = 0; i < 11; i++) room.addBot(a.playerId);
+    expect(room.join('Zeta')).toEqual({ ok: false, error: 'room-full' });
+  });
   it('addBot: non host', () => {
     const { room } = mk();
     joined(room, 'Anna');
@@ -258,6 +270,7 @@ describe('RoomManager', () => {
     expect(m.get(r.room.code)).toBe(r.room);
     expect(r.room.hostId).toBe(r.playerId);
     expect(m.createRoom('')).toEqual({ ok: false, error: 'invalid-nickname' });
+    expect(m.get(` ${r.room.code.toLowerCase()} `)).toBe(r.room);
     expect(m.get('ZZZZ')).toBeUndefined();
   });
   it('sweep elimina solo le stanze vuote da più di ROOM_IDLE_MS', () => {
