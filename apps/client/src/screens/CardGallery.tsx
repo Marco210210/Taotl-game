@@ -27,7 +27,7 @@ export function CardGallery() {
           <Card card={{ kind: 'god', god: 'nero' }} label="Nullo" size="trick" interactive={false} />
           <Card card={{ kind: 'chipetl', n: 3 }} label="Chipetl" size="mini" interactive={false} />
           <Card card={{ kind: 'god', god: 'rosso' }} label="Nullo" size="mini" interactive={false} />
-          <Card card={SAMPLE} size="hand" disabled />
+          <Card card={SAMPLE} size="hand" disabled dimmed />
           <Card card={SAMPLE} size="hand" selected />
         </div>
       </section>

@@ -7,6 +7,8 @@ export interface CardProps {
   card: CardT;
   label?: 'Chipetl' | 'Nullo' | null;
   disabled?: boolean;
+  /** Illegale adesso (tocca a me, ma la carta non è giocabile): attenuata. */
+  dimmed?: boolean;
   selected?: boolean;
   onClick?: () => void;
   size?: 'hand' | 'trick' | 'mini';
@@ -107,7 +109,7 @@ function SuitedFace({ suit, rank, size }: { suit: Suit; rank: Rank; size: Size }
   );
 }
 
-export function Card({ card, label = null, disabled = false, selected = false, onClick, size = 'trick', interactive = true }: CardProps) {
+export function Card({ card, label = null, disabled = false, dimmed = false, selected = false, onClick, size = 'trick', interactive = true }: CardProps) {
   const suit = card.kind === 'suited' ? card.suit : card.kind;
   const face = (
     <>
@@ -141,7 +143,7 @@ export function Card({ card, label = null, disabled = false, selected = false, o
       aria-label={cardLabel(card)}
       aria-disabled={disabled ? 'true' : 'false'}
       aria-pressed={selected ? 'true' : 'false'}
-      className={`card card-${size} suit-${suit}${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}`}
+      className={`card card-${size} suit-${suit}${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}${dimmed ? ' dimmed' : ''}`}
       onClick={disabled ? undefined : onClick}
     >
       {face}

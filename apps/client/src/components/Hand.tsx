@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { cardId, type Card as CardT, type CardId } from '@taotl/engine';
 import { sortHand } from '../lib/sortHand';
 import { Card } from './Card';
 
-export function Hand({ cards, playable, onPlay }: { cards: CardT[]; playable: Set<CardId>; onPlay: (id: CardId) => void }) {
+export function Hand({ cards, playable, onPlay, myTurn = true }: { cards: CardT[]; playable: Set<CardId>; onPlay: (id: CardId) => void; myTurn?: boolean }) {
   const [selected, setSelected] = useState<CardId | null>(null);
   const sorted = sortHand(cards);
   const key = sorted.map(cardId).join(',');
@@ -16,9 +16,11 @@ export function Hand({ cards, playable, onPlay }: { cards: CardT[]; playable: Se
     setSelected(null);
     onPlay(id);
   };
+  // porzione visibile di ogni carta sovrapposta (px): ≥ 32 anche con 36 carte, il resto si scorre
+  const slice = sorted.length <= 6 ? 52 : sorted.length <= 10 ? 40 : 32;
   return (
     <div className="hand-wrap">
-      <div className="hand" data-testid="hand">
+      <div className="hand" data-testid="hand" style={{ '--slice': `${slice}px` } as CSSProperties}>
         {sorted.map((c) => {
           const id = cardId(c);
           return (
@@ -27,17 +29,20 @@ export function Hand({ cards, playable, onPlay }: { cards: CardT[]; playable: Se
               card={c}
               size="hand"
               disabled={!playable.has(id)}
+              dimmed={myTurn && !playable.has(id)}
               selected={active === id}
               onClick={() => (active === id ? play(id) : setSelected(id))}
             />
           );
         })}
       </div>
-      {active && (
-        <button type="button" data-testid="btn-play" onClick={() => play(active)}>
-          Gioca
-        </button>
-      )}
+      <div className="play-slot">
+        {active && (
+          <button type="button" data-testid="btn-play" onClick={() => play(active)}>
+            Gioca
+          </button>
+        )}
+      </div>
     </div>
   );
 }

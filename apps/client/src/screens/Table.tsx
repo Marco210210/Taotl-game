@@ -42,20 +42,28 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
 
   return (
     <main className="table">
-      <PlayersBar game={game} seats={view.seats} />
-      {myTurn && (
-        <p data-testid="my-turn" className="my-turn">
-          Tocca a te
-        </p>
-      )}
-      <TrickArea cards={trickCards} seats={view.seats} winnerId={ended?.winnerId} />
-      <LastTrick tricks={game.tricksThisHand} seats={view.seats} />
-      {game.legalBids.length > 0 && !view.pause && (
-        <BidPanel allowed={game.legalBids} onBid={(value) => void send({ type: 'bid', value })} />
-      )}
-      {error && <p role="alert">{errorMessage(error)}</p>}
-      {game.phase === 'handEnd' && <HandSummary view={view} emit={emit} />}
-      <Hand cards={game.hand} playable={playable} onPlay={onPlay} />
+      <div className="table-top">
+        <PlayersBar game={game} seats={view.seats} />
+        <div className="turn-slot">
+          {myTurn && (
+            <p data-testid="my-turn" className="my-turn">
+              Tocca a te
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="table-center">
+        <TrickArea cards={trickCards} seats={view.seats} winnerId={ended?.winnerId} />
+        <LastTrick tricks={game.tricksThisHand} seats={view.seats} />
+        {game.phase === 'handEnd' && <HandSummary view={view} emit={emit} />}
+      </div>
+      <div className="dock">
+        {error && <p role="alert">{errorMessage(error)}</p>}
+        {game.legalBids.length > 0 && !view.pause && (
+          <BidPanel allowed={game.legalBids} onBid={(value) => void send({ type: 'bid', value })} />
+        )}
+        <Hand cards={game.hand} playable={playable} onPlay={onPlay} myTurn={myTurn && game.phase === 'playing'} />
+      </div>
       {choosing && (
         <GodChoice
           onChoose={(declareChipetl) => void send({ type: 'play', cardId: choosing, declareChipetl })}

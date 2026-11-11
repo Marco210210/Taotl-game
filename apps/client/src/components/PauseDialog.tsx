@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { RoomView } from '@taotl/protocol';
 import { errorMessage } from '../lib/errors';
 import type { TypedEmit } from '../net/socket';
+import { useDialogFocus } from './useDialogFocus';
 
 export function PauseDialog({ view, emit }: { view: RoomView; emit: TypedEmit }) {
   const [error, setError] = useState<string | null>(null);
+  const titleId = useId();
+  const ref = useDialogFocus<HTMLDivElement>();
   const pause = view.pause;
   if (!pause) return null;
   const nick = view.seats.find((s) => s.id === pause.waitingFor)?.nickname ?? '';
@@ -15,8 +18,8 @@ export function PauseDialog({ view, emit }: { view: RoomView; emit: TypedEmit })
   };
   return (
     <div className="overlay">
-      <div className="dialog" data-testid="pause-dialog" role="dialog">
-        <p>In attesa di {nick}…</p>
+      <div className="dialog" data-testid="pause-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={ref} tabIndex={-1}>
+        <p id={titleId} className="dialog-title">In attesa di {nick}…</p>
         {canDecide && (
           <>
             <button type="button" data-testid="btn-pause-wait" onClick={() => decide('wait')}>
@@ -25,7 +28,7 @@ export function PauseDialog({ view, emit }: { view: RoomView; emit: TypedEmit })
             <button type="button" data-testid="btn-pause-bot" onClick={() => decide('bot')}>
               Gioca al suo posto
             </button>
-            <button type="button" data-testid="btn-pause-end" onClick={() => decide('end')}>
+            <button type="button" className="secondary" data-testid="btn-pause-end" onClick={() => decide('end')}>
               Termina la partita
             </button>
           </>

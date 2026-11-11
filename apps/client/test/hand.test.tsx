@@ -43,4 +43,12 @@ describe('Hand', () => {
     render(<Hand cards={cards} playable={new Set()} onPlay={vi.fn()} />);
     expect(byId('cuori-14')).toHaveAttribute('aria-label', 'A di Cuori');
   });
+  it('attenuata solo se è il mio turno e la carta è illegale; fuori turno è leggibile', () => {
+    const { rerender } = render(<Hand cards={cards} playable={new Set(['cuori-14'])} onPlay={vi.fn()} myTurn />);
+    expect(byId('picche-5')).toHaveClass('dimmed');
+    expect(byId('cuori-14')).not.toHaveClass('dimmed');
+    rerender(<Hand cards={cards} playable={new Set()} onPlay={vi.fn()} myTurn={false} />);
+    expect(byId('picche-5')).not.toHaveClass('dimmed');
+    expect(byId('picche-5')).toHaveAttribute('aria-disabled', 'true');
+  });
 });
