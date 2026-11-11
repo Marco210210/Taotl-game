@@ -5,3 +5,4 @@ export { CARDS_PER_HAND, cardsPerHand, deal } from './deal';
 export { legalBids } from './bidding';
 export { handScore, ranking } from './scoring';
 export { trickSuit, godPlayStatus, legalCards, strength, trickWinner } from './trick';
+export { createGame, applyIntent, advance, endGameNow } from './game';

@@ -62,3 +62,59 @@ export function playedSeq(spec: string[]): PlayedCard[] {
   });
   return played;
 }
+
+import { legalBids } from '../src/bidding';
+import { cardId } from '../src/cards';
+import { advance, applyIntent, createGame } from '../src/game';
+import { godPlayStatus as godStatus, legalCards, trickSuit as suitOf } from '../src/trick';
+import { mulberry32 } from '../src/rng';
+import type { GameState, Intent, PlayerId } from '../src/types';
+
+/** Intent casuale ma lecito per il giocatore di turno. */
+export function randomLegalIntent(
+  state: GameState,
+  rng: () => number,
+): { playerId: PlayerId; intent: Intent } {
+  const p = state.players[state.turnIndex]!;
+  if (state.phase === 'bidding') {
+    const previous = state.players.filter((q) => q.bid !== null).map((q) => q.bid as number);
+    const bids = legalBids(state.cardsPerPlayer, previous, state.turnIndex === state.dealerIndex);
+    return { playerId: p.id, intent: { type: 'bid', value: bids[Math.floor(rng() * bids.length)]! } };
+  }
+  const suit = suitOf(state.currentTrick);
+  const options = legalCards(p.hand, suit);
+  const card = options[Math.floor(rng() * options.length)]!;
+  const intent: Intent = { type: 'play', cardId: cardId(card) };
+  if (card.kind === 'god' && godStatus(card.god, suit) === 'choice') {
+    intent.declareChipetl = rng() < 0.5;
+  }
+  return { playerId: p.id, intent };
+}
+
+/** Porta una partita fino a gameOver; `onState` osserva ogni stato intermedio. */
+export function simulate(
+  playerCount: number,
+  seed: number,
+  opts: {
+    chooser?: (state: GameState, rng: () => number) => { playerId: PlayerId; intent: Intent };
+    onState?: (state: GameState) => void;
+  } = {},
+): GameState {
+  const rng = mulberry32(seed);
+  const ids = Array.from({ length: playerCount }, (_, i) => `p${i}`);
+  const chooser = opts.chooser ?? randomLegalIntent;
+  let state = createGame(ids, { dealerIndex: Math.floor(rng() * playerCount), rng });
+  opts.onState?.(state);
+  while (state.phase !== 'gameOver') {
+    if (state.phase === 'trickEnd' || state.phase === 'handEnd') {
+      state = advance(state, rng);
+    } else {
+      const { playerId, intent } = chooser(state, rng);
+      const r = applyIntent(state, playerId, intent);
+      if (!r.ok) throw new Error(`Intent rifiutato: ${r.error}`);
+      state = r.state;
+    }
+    opts.onState?.(state);
+  }
+  return state;
+}
