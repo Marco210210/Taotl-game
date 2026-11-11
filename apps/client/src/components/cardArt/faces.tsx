@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 /** Volti stilizzati dei Dei e dei Chipetl, su una tavola 60x88 (stessa della carta). */
 
 const FEATHERS = [-62, -38, -14, 14, 38, 62];
@@ -20,7 +22,7 @@ function Fan({ cx, cy, r, len, colors, spread = FEATHERS }: { cx: number; cy: nu
 }
 
 /** Greca a gradoni, usata come collare. */
-function Fret({ x, y, w, color }: { x: number; y: number; w: number; color: string }) {
+export function Fret({ x, y, w, color }: { x: number; y: number; w: number; color: string }) {
   const steps = Math.floor(w / 6);
   const d: string[] = [];
   for (let i = 0; i < steps; i += 1) d.push(`M${x + i * 6} ${y + 6} v-3 h3 v-3 h3 v6 z`);
@@ -81,13 +83,14 @@ const SUN_RAYS = (() => {
 })();
 
 function TaotlGod() {
+  const clip = `taotl-clip-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <g>
       <rect x="2" y="2" width="56" height="84" rx="5" fill="#0d3e45" />
-      <clipPath id="taotl-clip">
+      <clipPath id={clip}>
         <rect x="2" y="2" width="56" height="84" rx="5" />
       </clipPath>
-      <g clipPath="url(#taotl-clip)">
+      <g clipPath={`url(#${clip})`}>
         <path d={SUN_RAYS} fill="#e8b73a" opacity="0.35" />
       </g>
       <circle cx="30" cy="32" r="23" fill="#e8b73a" />

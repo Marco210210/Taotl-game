@@ -47,13 +47,13 @@ button:disabled { opacity: 0.5; cursor: default; }
 .hand-wrap { display: flex; flex-direction: column; gap: 8px; }
 .hand { display: flex; gap: 4px; overflow-x: auto; padding: 14px 4px 8px; max-width: 100%; }
 .card { position: relative; flex: none; display: inline-block; padding: 0; margin: 0; border: 0; background: none; min-height: 0; line-height: 0; border-radius: var(--card-radius); filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.5)); }
-.card-art { display: block; width: 100%; height: auto; overflow: visible; }
+.card-art { display: block; width: 100%; height: auto; }
 .card-rank { font-family: var(--font-rank); font-weight: 400; }
 .card-hand { width: 60px; }
 .card-trick { width: 68px; }
 .card-mini { width: 44px; }
 .card.selected { transform: translateY(-10px); outline: 3px solid var(--accent); outline-offset: 1px; }
-.card.disabled { opacity: 0.45; filter: grayscale(0.6); cursor: default; }
+.card.disabled { opacity: 0.45; filter: grayscale(0.6) drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.5)); cursor: default; }
 .card:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .card-overlay { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); background: rgba(10, 6, 16, 0.88); color: #fff; font-size: 11px; font-weight: 700; line-height: 1.5; text-align: center; letter-spacing: 0.02em; border-block: 1px solid var(--accent); }
 .card-mini .card-overlay { font-size: 9px; }

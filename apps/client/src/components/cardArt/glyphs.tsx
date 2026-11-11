@@ -22,14 +22,14 @@ const SUN = (() => {
 
 /** Forme su griglia 24x24: ogni seme ha una silhouette diversa (leggibile anche in grigio). */
 const PATHS: Record<Suit, string> = {
-  // scheggia di ossidiana, spigolosa
-  picche: 'M12 1 L20 12 L19 17 L14 16 L15.2 23 H8.8 L10 16 L5 17 L4 12 Z',
+  // coltello d'ossidiana sfaccettato, con manico (la fessura e' la sfaccettatura)
+  picche: 'M12 0.5 L19 9 L16.5 16.5 L12 18.5 L7.5 16.5 L5 9 Z M11.4 4.5 L12.6 4.5 L13 15 L11 15 Z M10.2 19 H13.8 V23.5 H10.2 Z',
   // piramide a gradoni con tempio
   fiori: 'M2 22 V18.5 H5 V15 H8 V11.5 H10 V8 H11 V4 H13 V8 H14 V11.5 H16 V15 H19 V18.5 H22 V22 Z',
-  // cuore sacrificale arrotondato
-  cuori: 'M12 22.5 C4 16.5 2 11.5 2 7.6 C2 4.2 4.5 2 7.6 2 C9.6 2 11.1 3 12 4.9 C12.9 3 14.4 2 16.4 2 C19.5 2 22 4.2 22 7.6 C22 11.5 20 16.5 12 22.5 Z',
-  // rombo-sole con foro quadrato
-  quadri: 'M12 1 L23 12 L12 23 L1 12 Z M12 8.6 L15.4 12 L12 15.4 L8.6 12 Z',
+  // cuore a gradoni (contorno a greca)
+  cuori: 'M12 23 H10 V21 H8 V19 H6 V17 H4 V15 H2 V6 H4 V4 H9 V6 H11 V8 H13 V6 H15 V4 H20 V6 H22 V15 H20 V17 H18 V19 H16 V21 H14 V23 Z',
+  // disco di giada con foro quadrato
+  quadri: 'M12 0.5 a11.5 11.5 0 1 0 0.01 0 Z M8 8 H16 V16 H8 Z',
   totem: SUN,
 };
 

@@ -1,6 +1,6 @@
 import { cardId, type Card as CardT, type Rank, type Suit } from '@taotl/engine';
 import { cardLabel, rankLabel } from '../lib/labels';
-import { ChipetlFace, GodFace } from './cardArt/faces';
+import { ChipetlFace, Fret, GodFace } from './cardArt/faces';
 import { SUIT_COLOR, SuitGlyph } from './cardArt/glyphs';
 
 export interface CardProps {
@@ -33,11 +33,51 @@ function Index({ rank, suit }: { rank: Rank; suit: Suit }) {
   const text = rankLabel(rank);
   return (
     <>
-      <text className="card-rank" x="9.5" y="18" textAnchor="middle" fontSize={text.length > 1 ? 15 : 19} style={{ fill: SUIT_COLOR[suit] }}>
+      <text className="card-rank" x="9.5" y="18" textAnchor="middle" fontSize={text.length > 1 ? 15 : 19} textLength={text.length > 1 ? 13 : undefined} lengthAdjust="spacingAndGlyphs" style={{ fill: SUIT_COLOR[suit] }}>
         {text}
       </text>
       <SuitGlyph suit={suit} x={2.5} y={21.5} size={14} />
     </>
+  );
+}
+
+/** Figura geometrica per J/Q/K: stessa maschera, copricapo diverso per rango. */
+function CourtFigure({ suit, rank }: { suit: Suit; rank: 11 | 12 | 13 }) {
+  const c = SUIT_COLOR[suit];
+  return (
+    <g>
+      {rank === 11 && (
+        <>
+          <path d="M21 34 V30 H39 V34 Z" fill={c} />
+          <path d="M30 30 Q25 22 30 14 Q35 22 30 30Z" fill={c} />
+        </>
+      )}
+      {rank === 12 &&
+        [-52, -26, 0, 26, 52].map((deg) => {
+          const a = (deg * Math.PI) / 180;
+          const x1 = 30 + 6 * Math.sin(a);
+          const y1 = 34 - 6 * Math.cos(a);
+          return <polygon key={deg} points={`${x1 - 2.6 * Math.cos(a)},${y1 - 2.6 * Math.sin(a)} ${30 + 19 * Math.sin(a)},${34 - 19 * Math.cos(a)} ${x1 + 2.6 * Math.cos(a)},${y1 + 2.6 * Math.sin(a)}`} fill={c} />;
+        })}
+      {rank === 13 && <path d="M21 34 V27 H24 V22 H27 V16 H33 V22 H36 V27 H39 V34 Z" fill={c} />}
+      <path d="M22 34 H38 V50 L34 56 H26 L22 50 Z" fill={c} />
+      <path d="M24.5 41 H28.5 M31.5 41 H35.5" stroke="var(--paper)" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M27 50 H33" stroke="var(--paper)" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="19.6" cy="45" r="2.3" fill={c} />
+      <circle cx="40.4" cy="45" r="2.3" fill={c} />
+      <SuitGlyph suit={suit} x={24.5} y={60} size={11} />
+    </g>
+  );
+}
+
+function FretBands({ color }: { color: string }) {
+  return (
+    <g opacity="0.75">
+      <Fret x={21} y={5} w={18} color={color} />
+      <g transform="rotate(180 30 44)">
+        <Fret x={21} y={5} w={18} color={color} />
+      </g>
+    </g>
   );
 }
 
@@ -50,6 +90,7 @@ function SuitedFace({ suit, rank, size }: { suit: Suit; rank: Rank; size: Size }
       <rect x="1" y="1" width="58" height="86" rx="6" fill={totem ? 'var(--paper-totem)' : 'var(--paper)'} stroke={totem ? 'var(--gold)' : 'var(--ink)'} strokeWidth="1.6" />
       <rect x="3.6" y="3.6" width="52.8" height="80.8" rx="4" fill="none" stroke={totem ? 'var(--gold)' : SUIT_COLOR[suit]} strokeWidth={totem ? 1.4 : 0.7} opacity={totem ? 1 : 0.6} />
       {totem && <rect x="6" y="6" width="48" height="76" rx="3" fill="none" stroke="var(--suit-totem)" strokeWidth="0.7" strokeDasharray="2 1.6" />}
+      <FretBands color={totem ? 'var(--gold)' : SUIT_COLOR[suit]} />
       <Index rank={rank} suit={suit} />
       <g transform="rotate(180 30 44)">
         <Index rank={rank} suit={suit} />
@@ -58,17 +99,9 @@ function SuitedFace({ suit, rank, size }: { suit: Suit; rank: Rank; size: Size }
         pips.map(([c, r], i) => <SuitGlyph key={i} suit={suit} x={23 + c * 7 - 6} y={18 + r * 13 - 6} size={rank >= 9 ? 11 : 12} />)
       ) : (
         <>
-          {court && <path d="M30 17 L47 44 L30 71 L13 44 Z" fill="none" stroke={SUIT_COLOR[suit]} strokeWidth="1.2" opacity="0.55" />}
           {rank === 14 && <circle cx="30" cy="44" r="19" fill="none" stroke={SUIT_COLOR[suit]} strokeWidth="1.2" strokeDasharray="2.5 2" opacity="0.7" />}
-          <SuitGlyph suit={suit} x={court ? 17 : 15} y={court ? 31 : 29} size={court ? 26 : 30} />
+          {court && rank < 14 ? <CourtFigure suit={suit} rank={rank as 11 | 12 | 13} /> : <SuitGlyph suit={suit} x={15} y={29} size={30} />}
         </>
-      )}
-      {court && rank < 14 && (
-        <g fill={SUIT_COLOR[suit]}>
-          {Array.from({ length: rank - 10 }, (_, i) => (
-            <rect key={i} x={30 + (i - (rank - 11) / 2) * 5 - 1.5} y="10" width="3" height="3" />
-          ))}
-        </g>
       )}
     </>
   );
