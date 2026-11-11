@@ -3,6 +3,7 @@ import { errorMessage } from '../lib/errors';
 import { useRoom } from '../net/useRoom';
 import { Join } from './Join';
 import { Lobby } from './Lobby';
+import { Table } from './Table';
 
 function Failure({ error }: { error: string }) {
   return (
@@ -25,6 +26,7 @@ export function Room({ code }: { code: string }) {
       </main>
     );
   }
+  if (view.status === 'playing') return <Table view={view} emit={emit} />;
   if (view.status !== 'lobby') return <div data-testid="table-placeholder" />;
   return (
     <Lobby
