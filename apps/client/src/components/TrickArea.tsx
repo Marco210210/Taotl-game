@@ -14,7 +14,7 @@ export function TrickCards({ cards, seats, winnerId }: TrickProps) {
     <ul className="trick-cards">
       {cards.map((p) => (
         <li key={p.playerId} className={p.playerId === winnerId ? 'winner' : undefined}>
-          <Card card={p.card} label={p.label} size="trick" disabled />
+          <Card card={p.card} label={p.label} size="trick" interactive={false} />
           <span>
             {name(p.playerId)}
             {p.playerId === winnerId ? ' ★' : ''}

@@ -45,3 +45,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .card-overlay { position: absolute; inset: auto 0 0 0; background: rgba(0, 0, 0, 0.75); color: #fff; font-size: 0.6em; }
 .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: var(--panel); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 240px; }
+.hand-summary table { border-collapse: collapse; width: 100%; }
+.hand-summary th, .hand-summary td { padding: 4px 8px; text-align: center; }
+.final-ranking ol { list-style: none; padding: 0; }
+.card.static { display: inline-flex; cursor: default; }

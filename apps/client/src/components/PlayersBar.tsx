@@ -29,7 +29,7 @@ export function PlayersBar({ game, seats }: { game: PlayerView; seats: SeatView[
                 {s.botControlled && !s.isBot && <span className="badge">bot al suo posto</span>}
               </span>
               <span>
-                {p.bid ?? '–'}/{p.tricksWon} · carte {p.handCount} · tot {p.total}
+                dich. {p.bid ?? '–'} · fatte {p.tricksWon} · carte {p.handCount} · tot {p.total}
               </span>
             </li>
           );

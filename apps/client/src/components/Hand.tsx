@@ -18,7 +18,7 @@ export function Hand({ cards, playable, onPlay }: { cards: CardT[]; playable: Se
   };
   return (
     <div className="hand-wrap">
-      <div className="hand">
+      <div className="hand" data-testid="hand">
         {sorted.map((c) => {
           const id = cardId(c);
           return (

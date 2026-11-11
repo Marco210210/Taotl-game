@@ -1,6 +1,7 @@
 import { Link } from '../Link';
 import { errorMessage } from '../lib/errors';
 import { useRoom } from '../net/useRoom';
+import { FinalRanking } from './FinalRanking';
 import { Join } from './Join';
 import { Lobby } from './Lobby';
 import { Table } from './Table';
@@ -27,7 +28,7 @@ export function Room({ code }: { code: string }) {
     );
   }
   if (view.status === 'playing') return <Table view={view} emit={emit} />;
-  if (view.status !== 'lobby') return <div data-testid="table-placeholder" />;
+  if (view.status === 'ended') return <FinalRanking view={view} emit={emit} />;
   return (
     <Lobby
       view={view}

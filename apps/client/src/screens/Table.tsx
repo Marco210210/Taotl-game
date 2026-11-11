@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cardId, godPlayStatus, type CardId, type Intent } from '@taotl/engine';
 import type { RoomView } from '@taotl/protocol';
 import { BidPanel } from '../components/BidPanel';
 import { GodChoice } from '../components/GodChoice';
+import { HandSummary } from './HandSummary';
 import { Hand } from '../components/Hand';
 import { LastTrick } from '../components/LastTrick';
 import { PauseDialog } from '../components/PauseDialog';
@@ -15,6 +16,9 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
   const [choosing, setChoosing] = useState<CardId | null>(null);
   const [error, setError] = useState<string | null>(null);
   const game = view.game;
+  const turnId = game?.turnId;
+  const phase = game?.phase;
+  useEffect(() => setError(null), [turnId, phase]);
   if (!game) return null;
 
   const send = async (intent: Intent) => {
@@ -50,6 +54,7 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
         <BidPanel allowed={game.legalBids} onBid={(value) => void send({ type: 'bid', value })} />
       )}
       {error && <p role="alert">{errorMessage(error)}</p>}
+      {game.phase === 'handEnd' && <HandSummary view={view} emit={emit} />}
       <Hand cards={game.hand} playable={playable} onPlay={onPlay} />
       {choosing && (
         <GodChoice

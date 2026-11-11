@@ -15,10 +15,32 @@ export interface CardProps {
   selected?: boolean;
   onClick?: () => void;
   size?: 'hand' | 'trick' | 'mini';
+  /** false: carta solo da guardare (non è un bottone). */
+  interactive?: boolean;
 }
 
-export function Card({ card, label = null, disabled = false, selected = false, onClick, size = 'trick' }: CardProps) {
+export function Card({ card, label = null, disabled = false, selected = false, onClick, size = 'trick', interactive = true }: CardProps) {
   const suit = card.kind === 'suited' ? card.suit : card.kind;
+  const face = (
+    <>
+      <span className="card-face">{shortLabel(card)}</span>
+      {label && <span className="card-overlay">{label}</span>}
+    </>
+  );
+  if (!interactive) {
+    return (
+      <span
+        data-testid="card"
+        data-card-id={cardId(card)}
+        aria-label={cardLabel(card)}
+        aria-disabled="true"
+        role="img"
+        className={`card card-${size} suit-${suit} static`}
+      >
+        {face}
+      </span>
+    );
+  }
   return (
     <button
       type="button"
@@ -30,8 +52,7 @@ export function Card({ card, label = null, disabled = false, selected = false, o
       className={`card card-${size} suit-${suit}${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}`}
       onClick={disabled ? undefined : onClick}
     >
-      <span className="card-face">{shortLabel(card)}</span>
-      {label && <span className="card-overlay">{label}</span>}
+      {face}
     </button>
   );
 }
