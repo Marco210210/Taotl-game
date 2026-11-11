@@ -37,6 +37,12 @@ describe('Lobby', () => {
     expect(screen.getByText('In attesa che l\'host avvii la partita')).toBeInTheDocument();
     expect(screen.getByTestId('invite-link').textContent).toContain('/r/K7QX');
   });
+  it("mostra l'errore di un'azione host fallita", async () => {
+    const a = { ...actions(), addBot: vi.fn().mockResolvedValue({ ok: false, error: 'room-full' }) };
+    render(<Lobby view={mkView('a')} {...a} />);
+    await userEvent.click(screen.getByTestId('btn-add-bot'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('La stanza è piena');
+  });
   it('riordino emette l\'ordine completo', async () => {
     const a = actions();
     render(<Lobby view={mkView('a', ['a', 'b', 'c'])} {...a} />);

@@ -85,7 +85,20 @@ export function attachSocket(io: IoServer, manager: RoomManager): void {
     guarded('lobby:reorder', (b, p) =>
       isObj(p) && Array.isArray(p.order) && p.order.every(isStr) ? b.room.reorder(b.playerId, p.order) : BAD,
     );
-    guarded('lobby:kick', (b, p) => (isObj(p) && isStr(p.playerId) ? b.room.kick(b.playerId, p.playerId) : BAD));
+    guarded('lobby:kick', (b, p) => {
+      if (!isObj(p) || !isStr(p.playerId)) return BAD;
+      const target = p.playerId;
+      const sid = b.room.seats.find((s) => s.id === target)?.socketId;
+      const r = b.room.kick(b.playerId, target);
+      if (r.ok && sid) {
+        const ks = io.sockets.sockets.get(sid);
+        if (ks) {
+          ks.data = {};
+          ks.emit('room:kicked');
+        }
+      }
+      return r;
+    });
     guarded('lobby:addBot', (b) => b.room.addBot(b.playerId));
     guarded('game:start', (b) => b.room.start(b.playerId));
     guarded('game:intent', (b, p) => b.room.intent(b.playerId, p));

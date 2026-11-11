@@ -58,6 +58,21 @@ afterEach(async () => {
 });
 
 describe('Socket.IO', () => {
+  it('kick: il socket espulso riceve room:kicked e non e piu legato alla stanza', async () => {
+    const url = await boot();
+    const a = await open(url);
+    const b = await open(url);
+    const created = await emitAck(a, 'room:create', { nickname: 'Anna' });
+    const code = created.code as string;
+    await emitAck(b, 'room:join', { code, nickname: 'Beppe' });
+    const v = await waitFor(a, (x) => x.seats.length === 2);
+    const bId = v.seats.find((x) => x.id !== v.me)!.id;
+    const kicked = new Promise<void>((res) => b.on('room:kicked', res));
+    expect((await emitAck(a, 'lobby:kick', { playerId: bId })).ok).toBe(true);
+    await kicked;
+    expect(await emitAck(b, 'lobby:addBot')).toEqual({ ok: false, error: 'not-in-room' });
+  });
+
   it('due client: create + join + start, giocano fino a status ended con gli stessi totali, senza leak', async () => {
     const url = await boot();
     const a = await open(url);

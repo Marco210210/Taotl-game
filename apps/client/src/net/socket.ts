@@ -24,11 +24,27 @@ export function setToken(code: string, token: string): void {
   }
 }
 
-export type Res<T = object> = ({ ok: true } & T) | { ok: false; error: string };
+export function removeToken(code: string): void {
+  try {
+    localStorage.removeItem(key(code));
+  } catch {
+    /* localStorage non disponibile */
+  }
+}
+
+type Ev = keyof ClientToServerEvents;
+type Params<E extends Ev> = Parameters<ClientToServerEvents[E]>;
+/** Argomenti dell'evento, escluso l'ack finale. */
+export type EmitArgs<E extends Ev> = Params<E> extends [...infer A, unknown] ? A : never;
+/** Risultato dell'ack dell'evento. */
+export type EmitResult<E extends Ev> = Params<E> extends [...unknown[], (r: infer R) => void] ? R : never;
+export type TypedEmit = <E extends Ev>(ev: E, ...args: EmitArgs<E>) => Promise<EmitResult<E>>;
 
 /** Emette un evento con ack e restituisce la risposta come promessa. */
-export function request<T = object>(s: AppSocket, ev: keyof ClientToServerEvents, ...args: unknown[]): Promise<Res<T>> {
-  return new Promise((resolve) => {
-    (s as unknown as { emit: (e: string, ...a: unknown[]) => void }).emit(ev, ...args, (r: Res<T>) => resolve(r));
-  });
-}
+export const request =
+  (s: AppSocket): TypedEmit =>
+  (ev, ...args) =>
+    new Promise((resolve) => {
+      // unico punto non tipizzato: la signature di socket.io non sa unire argomenti e ack
+      (s.emit as (e: string, ...a: unknown[]) => void).call(s, ev, ...args, resolve);
+    });

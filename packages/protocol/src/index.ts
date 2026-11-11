@@ -37,6 +37,7 @@ export interface ClientToServerEvents {
 }
 export interface ServerToClientEvents {
   'room:state': (v: RoomView) => void;
+  'room:kicked': () => void;
 }
 
 export type ServerErrorCode =
