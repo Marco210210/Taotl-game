@@ -62,6 +62,15 @@ function byWeakness(a: Option, b: Option): number {
   );
 }
 
+/** Ordina per rango grezzo della carta; a parità un Dio in scelta come Chipetl prima. */
+function byRaw(a: Option, b: Option): number {
+  return (
+    cardRank(a.card) - cardRank(b.card) ||
+    cardId(a.card).localeCompare(cardId(b.card)) ||
+    Number(b.declareChipetl ?? false) - Number(a.declareChipetl ?? false)
+  );
+}
+
 function highest(options: Option[]): Option {
   return options.reduce((a, b) => (cardRank(b.card) > cardRank(a.card) ? b : a));
 }
@@ -104,7 +113,8 @@ export function choosePlay(view: PlayerView): Intent {
   const cards = view.hand.filter((x) => playable.has(cardId(x)));
   if (cards.length === 0) throw new Error('Nessuna carta giocabile');
   const me = view.players.find((p) => p.id === view.me);
-  const need = (me?.bid ?? 0) - (me?.tricksWon ?? 0);
+  if (me === undefined || me.bid === null) throw new Error('Dichiarazione del bot mancante');
+  const need = me.bid - me.tricksWon;
   const leading = view.currentTrick.length === 0;
   let options = buildOptions(view, cards);
 
@@ -112,7 +122,7 @@ export function choosePlay(view: PlayerView): Intent {
     if (leading) return toIntent(leadWanting(options, need));
     const winning = options.filter((o) => o.wins).sort(byWeakness);
     if (winning.length > 0) return toIntent(winning[0]!);
-    return toIntent([...options].sort(byWeakness)[0]!);
+    return toIntent([...options].sort(byRaw)[0]!);
   }
 
   // need <= 0: non voglio prendere; un Dio in scelta va giocato come Chipetl.
@@ -120,6 +130,7 @@ export function choosePlay(view: PlayerView): Intent {
   if (!leading) {
     const safe = options.filter((o) => !o.wins);
     if (safe.length > 0) return toIntent(safe.reduce((a, b) => (byWeakness(b, a) > 0 ? b : a)));
+    return toIntent([...options].sort(byWeakness)[0]!);
   }
-  return toIntent([...options].sort(byWeakness)[0]!);
+  return toIntent([...options].sort(byRaw)[0]!);
 }

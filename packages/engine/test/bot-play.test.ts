@@ -79,9 +79,29 @@ describe('botMove: scenari di gioco', () => {
     expect(botMove(v)).toEqual({ type: 'play', cardId: 'god-rosso', declareChipetl: false });
   });
 
-  it('need > 0 e nessuna carta vince: gioca la più debole, Dio come Chipetl', () => {
+  it('need > 0 e nessuna carta vince: gioca la carta più bassa, non un Dio', () => {
     const v = makeView({ hand: ['DR', '2♣'], trick: ['5♥', 'AT'], bid: 1 });
+    expect(botMove(v)).toEqual({ type: 'play', cardId: 'fiori-2' });
+  });
+
+  it('need > 0, nessuna carta vince, solo un Dio in choice: lo gioca come Chipetl', () => {
+    const v = makeView({ hand: ['DR'], trick: ['5♥', 'AT'], bid: 1 });
     expect(botMove(v)).toEqual({ type: 'play', cardId: 'god-rosso', declareChipetl: true });
+  });
+
+  it('need 0, apre, mano {DN, 2♣}: non apre con il Dio', () => {
+    const v = makeView({ hand: ['DN', '2♣'], bid: 0 });
+    expect(botMove(v)).toEqual({ type: 'play', cardId: 'fiori-2' });
+  });
+
+  it('far sballare: avversario che ha già raggiunto la dichiarazione non viene superato', () => {
+    const v = makeView({ hand: ['A♥', '3♥'], trick: ['5♥'], bid: 0 });
+    v.players[1] = { ...v.players[1]!, bid: 1, tricksWon: 1 };
+    expect(botMove(v)).toEqual({ type: 'play', cardId: 'cuori-3' });
+  });
+
+  it('lancia in gioco senza dichiarazione', () => {
+    expect(() => botMove(makeView({ hand: ['2♣'] }))).toThrow();
   });
 
   it('apre con need > 0 e meno carte quasi sicure di need: carta alta del colore più lungo', () => {

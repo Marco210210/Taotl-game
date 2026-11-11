@@ -4,4 +4,4 @@ Decisioni non coperte da SPEC e PLAN: è stata scelta l'opzione più semplice co
 Formato: **decisione** — perché — costo se sbagliata.
 
 - **Notazione di test per il Totem senza spazi** (`'JT'`, non `'J T'` come in un esempio del Task 1.4) — coerente con `c('7T')`/`c('AT')` del Task 1.2 — nessun costo, riguarda solo i test.
-- **Il bot tiene conto delle dichiarazioni già fatte** arrotondando per difetto la stima quando la somma delle dichiarazioni precedenti è già ≥ N — lettura più semplice di SPEC §8 — costo: dichiarazioni del bot leggermente diverse
+- **Il bot tiene conto delle dichiarazioni già fatte** arrotondando per difetto la stima quando la somma delle dichiarazioni precedenti è già ≥ N — lettura più semplice di SPEC §8 — costo se sbagliata: dichiarazioni del bot leggermente diverse.
