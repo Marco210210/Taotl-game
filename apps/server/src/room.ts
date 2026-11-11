@@ -1,4 +1,15 @@
-import { createGame, type GameState, type PlayerId } from '@taotl/engine';
+import {
+  advance,
+  applyIntent,
+  botMove,
+  createGame,
+  endGameNow,
+  viewFor,
+  type GameState,
+  type Intent,
+  type PlayerId,
+} from '@taotl/engine';
+import type { PauseView } from '@taotl/protocol';
 import type { ServerConfig } from './config';
 import { newPlayerId, newToken } from './tokens';
 
@@ -23,6 +34,7 @@ export interface Seat {
   connected: boolean;
   botControlled: boolean;
   socketId?: string;
+  disconnectedAt?: number;
 }
 
 export type RoomStatus = 'lobby' | 'playing' | 'ended';
@@ -42,6 +54,8 @@ export class Room {
   game: GameState | null = null;
   lastHumanSeenAt: number;
   private kickedTokens = new Set<string>();
+  private actionTimer: (() => void) | null = null;
+  private graceTimer: (() => void) | null = null;
 
   constructor(
     code: string,
@@ -90,6 +104,10 @@ export class Room {
     if (!seat) return;
     seat.connected = true;
     seat.socketId = socketId;
+    seat.disconnectedAt = undefined;
+    seat.botControlled = false;
+    const host = this.seats.find((s) => s.id === this.hostId);
+    if (!host || !host.connected) this.hostId = seat.id;
     this.lastHumanSeenAt = this.deps.now();
     this.changed();
   }
@@ -100,6 +118,8 @@ export class Room {
     if (!seat || seat.socketId !== socketId) return;
     seat.connected = false;
     seat.socketId = undefined;
+    seat.disconnectedAt = this.deps.now();
+    if (this.hostId === seat.id) this.transferHost(seat);
     this.lastHumanSeenAt = this.deps.now();
     this.changed();
   }
@@ -161,7 +181,165 @@ export class Room {
     return { ok: true };
   }
 
+  /** Primo umano connesso partendo dal posto successivo; se non c'e, l'host resta com'e. */
+  private transferHost(old: Seat): void {
+    const n = this.seats.length;
+    const start = this.seats.indexOf(old);
+    for (let i = 1; i < n; i++) {
+      const s = this.seats[(start + i) % n] as Seat;
+      if (!s.isBot && s.connected) {
+        this.hostId = s.id;
+        return;
+      }
+    }
+  }
+
+  private static validIntent(i: unknown): i is Intent {
+    if (typeof i !== 'object' || i === null) return false;
+    const o = i as Record<string, unknown>;
+    if (o.type === 'bid') return typeof o.value === 'number';
+    if (o.type === 'play') {
+      return typeof o.cardId === 'string' && (o.declareChipetl === undefined || typeof o.declareChipetl === 'boolean');
+    }
+    return false;
+  }
+
+  intent(playerId: PlayerId, intent: unknown): Res {
+    if (this.status !== 'playing' || !this.game) return { ok: false, error: 'wrong-phase' };
+    const seat = this.seats.find((s) => s.id === playerId);
+    if (!seat) return { ok: false, error: 'unknown-player' };
+    if (seat.isBot || seat.botControlled) return { ok: false, error: 'not-your-turn' };
+    if (!Room.validIntent(intent)) return { ok: false, error: 'bad-intent' };
+    const r = applyIntent(this.game, playerId, intent);
+    if (!r.ok) return r;
+    this.setGame(r.state);
+    this.changed();
+    return { ok: true };
+  }
+
+  nextHand(by: PlayerId): Res {
+    if (by !== this.hostId) return { ok: false, error: 'not-host' };
+    if (this.status !== 'playing' || !this.game || this.game.phase !== 'handEnd') {
+      return { ok: false, error: 'wrong-phase' };
+    }
+    this.setGame(advance(this.game, this.deps.rng));
+    this.changed();
+    return { ok: true };
+  }
+
+  /** Pausa attiva: turno di un umano disconnesso e non sostituito da un bot. */
+  pauseInfo(): PauseView | null {
+    const seat = this.pausedSeat();
+    if (!seat) return null;
+    return { waitingFor: seat.id, hostCanDecide: this.graceElapsed(seat) };
+  }
+
+  private turnSeat(): Seat | null {
+    const g = this.game;
+    if (this.status !== 'playing' || !g || (g.phase !== 'bidding' && g.phase !== 'playing')) return null;
+    const id = g.players[g.turnIndex]?.id;
+    return this.seats.find((s) => s.id === id) ?? null;
+  }
+
+  private pausedSeat(): Seat | null {
+    const s = this.turnSeat();
+    return s && !s.isBot && !s.connected && !s.botControlled ? s : null;
+  }
+
+  private graceElapsed(seat: Seat): boolean {
+    return this.deps.now() - (seat.disconnectedAt ?? 0) >= this.deps.cfg.disconnectGraceMs;
+  }
+
+  hostDecision(by: PlayerId, choice: 'wait' | 'bot' | 'end'): Res {
+    if (by !== this.hostId) return { ok: false, error: 'not-host' };
+    const seat = this.pausedSeat();
+    if (!seat || !this.graceElapsed(seat)) return { ok: false, error: 'no-pause' };
+    if (choice === 'wait') return { ok: true };
+    if (choice === 'bot') seat.botControlled = true;
+    else if (choice === 'end') this.setGame(endGameNow(this.game as GameState));
+    else return { ok: false, error: 'bad-choice' };
+    this.changed();
+    return { ok: true };
+  }
+
+  rematch(by: PlayerId): Res {
+    if (by !== this.hostId) return { ok: false, error: 'not-host' };
+    if (this.status !== 'ended') return { ok: false, error: 'wrong-phase' };
+    for (const s of this.seats) if (!s.isBot && s.connected) s.botControlled = false;
+    const dealerIndex = Math.floor(this.deps.rng() * this.seats.length);
+    this.game = createGame(
+      this.seats.map((s) => s.id),
+      { dealerIndex, rng: this.deps.rng },
+    );
+    this.status = 'playing';
+    this.changed();
+    return { ok: true };
+  }
+
+  dispose(): void {
+    this.cancelTimers();
+  }
+
+  private setGame(g: GameState): void {
+    this.game = g;
+    if (g.phase === 'gameOver') this.status = 'ended';
+  }
+
+  private cancelTimers(): void {
+    this.actionTimer?.();
+    this.graceTimer?.();
+    this.actionTimer = null;
+    this.graceTimer = null;
+  }
+
+  /** Cancella i timer pendenti e arma quelli che servono allo stato corrente. */
+  private reschedule(): void {
+    this.cancelTimers();
+    const g = this.game;
+    if (this.status !== 'playing' || !g) return;
+    if (g.phase === 'trickEnd') {
+      this.actionTimer = this.deps.setTimer(() => {
+        this.actionTimer = null;
+        if (this.status !== 'playing' || !this.game || this.game.phase !== 'trickEnd') return;
+        this.setGame(advance(this.game, this.deps.rng));
+        this.changed();
+      }, this.deps.cfg.trickPauseMs);
+      return;
+    }
+    const seat = this.turnSeat();
+    if (!seat) return;
+    if (seat.isBot || seat.botControlled) {
+      this.actionTimer = this.deps.setTimer(() => {
+        this.actionTimer = null;
+        this.runBotMove();
+      }, this.deps.cfg.botMoveDelayMs);
+    } else if (this.pausedSeat() && !this.graceElapsed(seat)) {
+      const wait = this.deps.cfg.disconnectGraceMs - (this.deps.now() - (seat.disconnectedAt ?? 0));
+      this.graceTimer = this.deps.setTimer(() => {
+        this.graceTimer = null;
+        this.deps.onChange(this);
+      }, Math.max(0, wait));
+    }
+  }
+
+  private runBotMove(): void {
+    const seat = this.turnSeat();
+    if (!seat || !this.game || !(seat.isBot || seat.botControlled)) return;
+    try {
+      const r = applyIntent(this.game, seat.id, botMove(viewFor(this.game, seat.id), this.game.config));
+      if (!r.ok) {
+        console.error(`Mossa del bot rifiutata: ${r.error}`);
+        return;
+      }
+      this.setGame(r.state);
+      this.changed();
+    } catch (e) {
+      console.error('Errore nella mossa del bot', e);
+    }
+  }
+
   private changed(): void {
+    this.reschedule();
     this.deps.onChange(this);
   }
 }

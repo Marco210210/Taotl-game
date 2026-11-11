@@ -17,6 +17,6 @@ export function roomViewFor(room: Room, playerId: PlayerId): RoomView {
       botControlled: s.botControlled,
     })),
     game: room.game ? viewFor(room.game, playerId) : null,
-    pause: null,
+    pause: room.pauseInfo(),
   };
 }

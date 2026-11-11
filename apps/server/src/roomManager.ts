@@ -25,6 +25,7 @@ export class RoomManager {
   sweep(now: number): void {
     for (const [code, room] of this.rooms) {
       if (!room.hasConnectedHumans() && now - room.lastHumanSeenAt > this.deps.cfg.roomIdleMs) {
+        room.dispose();
         this.rooms.delete(code);
       }
     }
