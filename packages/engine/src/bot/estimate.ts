@@ -35,10 +35,20 @@ export function estimateTricks(hand: Card[], n: number, _playerCount: number): n
   return Math.max(0, Math.min(n, total));
 }
 
-/** Dichiarazione: stima arrotondata, poi il valore lecito più vicino (a parità il più basso). */
-export function chooseBid(hand: Card[], n: number, playerCount: number, legal: number[]): number {
+/**
+ * Dichiarazione: stima arrotondata (o per difetto con `mode: 'floor'`), poi il valore lecito
+ * più vicino (a parità il più basso).
+ */
+export function chooseBid(
+  hand: Card[],
+  n: number,
+  playerCount: number,
+  legal: number[],
+  mode: 'round' | 'floor' = 'round',
+): number {
   if (legal.length === 0) throw new Error('Nessuna dichiarazione lecita');
-  const target = Math.round(estimateTricks(hand, n, playerCount));
+  const estimate = estimateTricks(hand, n, playerCount);
+  const target = mode === 'floor' ? Math.floor(estimate) : Math.round(estimate);
   let best = legal[0]!;
   for (const v of legal) {
     const d = Math.abs(v - target);

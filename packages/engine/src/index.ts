@@ -7,3 +7,4 @@ export { handScore, ranking } from './scoring';
 export { trickSuit, godPlayStatus, legalCards, strength, trickWinner } from './trick';
 export { createGame, applyIntent, advance, endGameNow } from './game';
 export { viewFor } from './view';
+export { botMove } from './bot';
