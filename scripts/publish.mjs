@@ -9,8 +9,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HOST = process.env.TAOTL_SSH_HOST ?? 'oracle-server';
-const REMOTE_DIR = 'Taotl-game'; // relativo alla home remota
-const STAGING = '.Taotl-game-upload'; // cartella temporanea remota
+const REMOTE_DIR = 'progetti/Taotl-game'; // relativo alla home remota
+const STAGING = 'progetti/.Taotl-game-upload'; // cartella temporanea remota
 
 // Esclusioni: nomi di file/cartelle, a qualsiasi livello.
 const EXCLUDE = [

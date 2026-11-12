@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy del gioco Taotl sul server: install, build, restart del servizio.
-# Va eseguito SUL SERVER, dentro ~/Taotl-game (lo lancia scripts/publish.mjs).
+# Va eseguito SUL SERVER, dentro ~/progetti/Taotl-game (lo lancia scripts/publish.mjs).
 # Non legge il profilo della shell: PATH e percorsi sono espliciti.
 set -euo pipefail
 

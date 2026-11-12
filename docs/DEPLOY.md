@@ -16,10 +16,10 @@ Lo script `scripts/publish.mjs`:
 1. impacchetta la **cartella di lavoro locale** (non git) con `tar`, escludendo
    `node_modules`, `dist`, `build`, `.git`, `.claude`, `.playwright-mcp`, `.superpowers`,
    `test-results`, `playwright-report`, `taotl.zip`, `.mcp.json` e `skills-lock.json`;
-2. la invia via `ssh` in `~/.Taotl-game-upload` sul server e stampa quanti file e MB ha trasferito;
-3. la sincronizza in `~/Taotl-game` con `rsync --delete`, così i file cancellati in locale
+2. la invia via `ssh` in `~/progetti/.Taotl-game-upload` sul server e stampa quanti file e MB ha trasferito;
+3. la sincronizza in `~/progetti/Taotl-game` con `rsync --delete`, così i file cancellati in locale
    spariscono anche dal server (`node_modules` e `dist` del server restano);
-4. lancia `~/Taotl-game/deploy.sh`.
+4. lancia `~/progetti/Taotl-game/deploy.sh`.
 
 Opzioni:
 
@@ -37,13 +37,13 @@ sia una 26.x, poi esegue `pnpm install --frozen-lockfile`, `pnpm build` e
 `systemctl --user restart taotl-game`. Infine attende che `http://127.0.0.1:<PORT>/` risponda;
 se non risponde stampa gli ultimi log ed esce con errore.
 
-Per lanciarlo a mano: `ssh oracle-server "bash ~/Taotl-game/deploy.sh"`.
+Per lanciarlo a mano: `ssh oracle-server "bash ~/progetti/Taotl-game/deploy.sh"`.
 
 ## Come è configurato il server
 
 | Cosa | Dove |
 |---|---|
-| Codice | `~/Taotl-game` |
+| Codice | `~/progetti/Taotl-game` |
 | Node 26 + pnpm 12.18.0 | `~/.local/node-26` (isolato: il Node 22 di sistema serve agli altri servizi e **non va aggiornato**) |
 | Servizio | systemd **utente** `taotl-game.service` (`~/.config/systemd/user/`), utente `ubuntu`, `Restart=always`, avvio al boot grazie al linger attivo; stesso schema di `taotl-expo-go` |
 | Variabili d'ambiente | `~/.config/taotl-game.env` (permessi 600): `NODE_ENV=production`, `HOST=127.0.0.1`, `PORT=8140` |
