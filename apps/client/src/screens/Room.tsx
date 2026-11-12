@@ -15,8 +15,20 @@ function Failure({ error }: { error: string }) {
   );
 }
 
+export function TakenOver({ onResume }: { onResume: () => void }) {
+  return (
+    <main className="screen">
+      <p role="alert" data-testid="taken-over">Sei connesso da un'altra scheda</p>
+      <button type="button" data-testid="btn-resume" onClick={onResume}>
+        Riprendi qui
+      </button>
+    </main>
+  );
+}
+
 export function Room({ code }: { code: string }) {
-  const { view, error, needsJoin, join, emit } = useRoom(code);
+  const { view, error, needsJoin, join, emit, takenOver, resume } = useRoom(code);
+  if (takenOver) return <TakenOver onResume={resume} />;
   if (error === 'room-not-found' || error === 'game-started') return <Failure error={error} />;
   if (needsJoin) return <Join error={error} onJoin={join} />;
   if (error && !view) return <Failure error={error} />;

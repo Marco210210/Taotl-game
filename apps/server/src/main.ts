@@ -6,3 +6,6 @@ const { httpServer } = createApp(cfg);
 httpServer.listen(cfg.port, () => {
   console.log(`listening on ${cfg.port}`);
 });
+
+process.on('uncaughtException', (e) => console.error('uncaughtException', e));
+process.on('unhandledRejection', (e) => console.error('unhandledRejection', e));

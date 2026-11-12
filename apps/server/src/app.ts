@@ -9,6 +9,7 @@ import type { ServerConfig } from './config';
 import { RoomManager } from './roomManager';
 import { roomViewFor } from './roomView';
 import { attachSocket } from './socket';
+import { cryptoRng } from './tokens';
 
 const SWEEP_INTERVAL_MS = 60_000;
 
@@ -24,13 +25,13 @@ function clientDist(): string {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
 }
 
-export function createApp(cfg: ServerConfig): App {
+export function createApp(cfg: ServerConfig, deps: { rng?: () => number } = {}): App {
   const expressApp = express();
   const httpServer = createServer(expressApp);
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 
   const manager: RoomManager = new RoomManager({
-    rng: Math.random,
+    rng: deps.rng ?? cryptoRng,
     now: () => Date.now(),
     setTimer: (fn, ms) => {
       const t = setTimeout(fn, ms);

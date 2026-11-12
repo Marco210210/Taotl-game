@@ -7,6 +7,7 @@ const REJOIN_FAIL = ['bad-token', 'kicked'];
 export function useRoom(code: string) {
   const [view, setView] = useState<RoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [takenOver, setTakenOver] = useState(false);
   const [needsJoin, setNeedsJoin] = useState(() => getToken(code) === null);
 
   useEffect(() => {
@@ -19,7 +20,11 @@ export function useRoom(code: string) {
       setError('kicked');
       setNeedsJoin(true);
     };
+    const onDisconnect = (reason: string) => {
+      if (reason === 'io server disconnect') setTakenOver(true);
+    };
     const tryRejoin = async () => {
+      setTakenOver(false);
       const token = getToken(code);
       if (!token) return setNeedsJoin(true);
       const r = await emit('room:join', { code, token });
@@ -37,11 +42,13 @@ export function useRoom(code: string) {
     s.on('room:state', onState);
     s.on('room:kicked', onKicked);
     s.on('connect', tryRejoin);
+    s.on('disconnect', onDisconnect);
     if (s.connected) void tryRejoin();
     return () => {
       s.off('room:state', onState);
       s.off('room:kicked', onKicked);
       s.off('connect', tryRejoin);
+      s.off('disconnect', onDisconnect);
     };
   }, [code]);
 
@@ -59,5 +66,9 @@ export function useRoom(code: string) {
 
   const emit: TypedEmit = useCallback((ev, ...args) => request(getSocket())(ev, ...args), []);
 
-  return { view, error, needsJoin, join, emit };
+  const resume = useCallback(() => {
+    getSocket().connect();
+  }, []);
+
+  return { view, error, needsJoin, join, emit, takenOver, resume };
 }

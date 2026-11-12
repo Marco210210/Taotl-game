@@ -1,6 +1,6 @@
 const MESSAGES: Record<string, string> = {
   'room-not-found': 'Stanza non trovata',
-  'game-started': 'La partita è già iniziata',
+  'game-started': 'La partita è già iniziata o terminata: non si può più entrare',
   'room-full': 'La stanza è piena',
   'nickname-taken': 'Nickname già in uso',
   'invalid-nickname': 'Nickname non valido (da 1 a 16 caratteri)',

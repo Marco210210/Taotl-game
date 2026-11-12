@@ -3,7 +3,9 @@ import {
   applyIntent,
   botMove,
   createGame,
+  cardFromId,
   endGameNow,
+  godPlayStatus,
   viewFor,
   type GameState,
   type Intent,
@@ -300,9 +302,13 @@ export class Room {
     if (g.phase === 'trickEnd') {
       this.actionTimer = this.deps.setTimer(() => {
         this.actionTimer = null;
-        if (this.status !== 'playing' || !this.game || this.game.phase !== 'trickEnd') return;
-        this.setGame(advance(this.game, this.deps.rng));
-        this.changed();
+        try {
+          if (this.status !== 'playing' || !this.game || this.game.phase !== 'trickEnd') return;
+          this.setGame(advance(this.game, this.deps.rng));
+          this.changed();
+        } catch (e) {
+          console.error('Errore nel timer di fine presa', e);
+        }
       }, this.deps.cfg.trickPauseMs);
       return;
     }
@@ -317,7 +323,11 @@ export class Room {
       const wait = this.deps.cfg.disconnectGraceMs - (this.deps.now() - (seat.disconnectedAt ?? 0));
       this.graceTimer = this.deps.setTimer(() => {
         this.graceTimer = null;
-        this.deps.onChange(this);
+        try {
+          this.deps.onChange(this);
+        } catch (e) {
+          console.error('Errore nel timer di disconnessione', e);
+        }
       }, Math.max(0, wait));
     }
   }
@@ -327,14 +337,48 @@ export class Room {
     if (!seat || !this.game || !(seat.isBot || seat.botControlled)) return;
     try {
       const r = applyIntent(this.game, seat.id, botMove(viewFor(this.game, seat.id), this.game.config));
+      if (r.ok) {
+        this.setGame(r.state);
+        this.changed();
+        return;
+      }
+      console.error(`Mossa del bot rifiutata: ${r.error}`);
+    } catch (e) {
+      console.error('Errore nella mossa del bot', e);
+    }
+    this.fallbackBotMove(seat.id);
+  }
+
+  /** Se il bot fallisce la partita non deve bloccarsi: gioca la prima mossa legale. */
+  private fallbackBotMove(id: PlayerId): void {
+    try {
+      const game = this.game;
+      if (!game) return;
+      const view = viewFor(game, id);
+      let intent: Intent | null = null;
+      if (game.phase === 'bidding') {
+        const value = view.legalBids[0];
+        if (value !== undefined) intent = { type: 'bid', value };
+      } else {
+        const cardId = view.playableCardIds[0];
+        if (cardId !== undefined) {
+          const card = cardFromId(cardId);
+          intent =
+            card.kind === 'god' && godPlayStatus(card.god, view.trickSuit) === 'choice'
+              ? { type: 'play', cardId, declareChipetl: true }
+              : { type: 'play', cardId };
+        }
+      }
+      if (!intent) return;
+      const r = applyIntent(game, id, intent);
       if (!r.ok) {
-        console.error(`Mossa del bot rifiutata: ${r.error}`);
+        console.error(`Mossa di ripiego rifiutata: ${r.error}`);
         return;
       }
       this.setGame(r.state);
       this.changed();
     } catch (e) {
-      console.error('Errore nella mossa del bot', e);
+      console.error('Errore nella mossa di ripiego del bot', e);
     }
   }
 
