@@ -57,6 +57,7 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
         <LastTrick tricks={game.tricksThisHand} seats={view.seats} />
         {game.phase === 'handEnd' && <HandSummary view={view} emit={emit} />}
       </div>
+      {game.phase !== 'handEnd' && (
       <div className="dock">
         {error && <p role="alert">{errorMessage(error)}</p>}
         {game.legalBids.length > 0 && !view.pause && (
@@ -64,6 +65,7 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
         )}
         <Hand cards={game.hand} playable={playable} onPlay={onPlay} myTurn={myTurn && game.phase === 'playing'} />
       </div>
+      )}
       {choosing && (
         <GodChoice
           onChoose={(declareChipetl) => void send({ type: 'play', cardId: choosing, declareChipetl })}

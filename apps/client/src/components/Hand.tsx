@@ -3,7 +3,7 @@ import { cardId, type Card as CardT, type CardId } from '@taotl/engine';
 import { sortHand } from '../lib/sortHand';
 import { Card } from './Card';
 
-export function Hand({ cards, playable, onPlay, myTurn = true }: { cards: CardT[]; playable: Set<CardId>; onPlay: (id: CardId) => void; myTurn?: boolean }) {
+export function Hand({ cards, playable, onPlay, myTurn = false }: { cards: CardT[]; playable: Set<CardId>; onPlay: (id: CardId) => void; myTurn?: boolean }) {
   const [selected, setSelected] = useState<CardId | null>(null);
   const sorted = sortHand(cards);
   const key = sorted.map(cardId).join(',');
