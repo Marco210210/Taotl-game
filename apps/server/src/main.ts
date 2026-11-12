@@ -3,8 +3,8 @@ import { loadConfig } from './config';
 
 const cfg = loadConfig();
 const { httpServer } = createApp(cfg);
-httpServer.listen(cfg.port, () => {
-  console.log(`listening on ${cfg.port}`);
+httpServer.listen(cfg.port, cfg.host, () => {
+  console.log(`listening on ${cfg.host ?? '*'}:${cfg.port}`);
 });
 
 process.on('uncaughtException', (e) => console.error('uncaughtException', e));
