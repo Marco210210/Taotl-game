@@ -63,7 +63,12 @@ describe('legalCards (§10.4)', () => {
     ['Totem con Totem in mano', ['7T', 'A♥', 'CH1'], 'totem', ['7T', 'CH1']],
     ['Totem con Dio Rosso', ['7T', 'DR', 'K♠'], 'totem', ['7T', 'DR']],
     ['Totem senza Totem', ['A♥', 'CH1', 'DN'], 'totem', ['A♥', 'CH1', 'DN']],
-    ['Cuori', ['A♠', '3T', '2♥'], 'cuori', ['A♠', '3T', '2♥']],
+    // Regola della casa: obbligo di seme nei 4 colori normali; Totem (taglio) e magiche sempre ammessi.
+    ['Cuori con Cuori: niente Picche', ['A♠', '3T', '2♥'], 'cuori', ['3T', '2♥']],
+    ['Picche con Picche: Picche, Totem e magiche', ['5♠', 'K♥', '9T', 'DR', 'DN', 'TAO', 'CH1'], 'picche', ['5♠', '9T', 'DR', 'DN', 'TAO', 'CH1']],
+    ['Picche con sole Picche e altri semi', ['2♠', 'A♥', 'A♦', 'A♣'], 'picche', ['2♠']],
+    ['Fiori senza Fiori: gioco libero', ['A♠', '3♥', '2♦'], 'fiori', ['A♠', '3♥', '2♦']],
+    ['Quadri senza Quadri ma con Totem: gioco libero', ['A♠', '3T', 'CH2'], 'quadri', ['A♠', '3T', 'CH2']],
     ['Non stabilito', ['A♠', '3T', '2♥'], null, ['A♠', '3T', '2♥']],
   ])('%s', (_name, hand, suit, expected) => {
     const h = hand.map(c);

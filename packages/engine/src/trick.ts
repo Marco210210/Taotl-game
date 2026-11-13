@@ -20,12 +20,17 @@ export function godPlayStatus(
   return 'null';
 }
 
-/** Carte giocabili (§5.4). */
+/**
+ * Carte giocabili (§5.4). Chi ha in mano il colore della presa deve rispondere:
+ * - colore Totem: un Totem o una carta magica;
+ * - colore Picche/Cuori/Quadri/Fiori: quel colore, un Totem (taglio) o una carta magica.
+ * Senza il colore della presa (o con colore non stabilito) il gioco è libero.
+ */
 export function legalCards(hand: Card[], suit: Suit | null): Card[] {
-  if (suit !== 'totem') return hand;
-  const hasTotem = hand.some((x) => x.kind === 'suited' && x.suit === 'totem');
-  if (!hasTotem) return hand;
-  return hand.filter((x) => x.kind !== 'suited' || x.suit === 'totem');
+  if (suit === null) return hand;
+  const hasSuit = hand.some((x) => x.kind === 'suited' && x.suit === suit);
+  if (!hasSuit) return hand;
+  return hand.filter((x) => x.kind !== 'suited' || x.suit === suit || x.suit === 'totem');
 }
 
 /** Forza di una carta giocata (§5.5): più alto = più forte, 0 = non vincente. */

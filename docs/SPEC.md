@@ -125,19 +125,22 @@ Ogni Dio giocato è **valido** o **nullo**, e la cosa si decide **nel momento in
 - Un Dio nullo (d'ufficio o dichiarato Chipetl) è a tutti gli effetti una **carta nulla**, equivalente a un Chipetl.
 
 ### 5.4 Carte giocabili (obblighi)
-- **Colore non stabilito**, oppure colore = Picche/Cuori/Quadri/Fiori: **nessun obbligo**, qualsiasi carta.
+- **Colore non stabilito**: **nessun obbligo**, qualsiasi carta.
+- **Colore = Picche/Cuori/Quadri/Fiori** (regola della casa, vedi §9 riga 10):
+  - se il giocatore **ha almeno una carta di quel colore**, può giocare **quel colore**, **un Totem qualsiasi** (taglio) oppure **una carta magica qualsiasi**. Non può giocare carte degli altri 3 colori normali.
+  - se **non ha quel colore**, gioca **qualsiasi carta**.
 - **Colore = Totem**:
   - se il giocatore **ha almeno un Totem** in mano, può giocare **un Totem qualsiasi** oppure **una carta magica qualsiasi** (Chipetl, Dio Rosso, Dio Nero, Taotl). Non può giocare carte degli altri 4 colori.
   - se **non ha Totem**, gioca **qualsiasi carta**.
 - Non c'è **mai** obbligo di vincere la presa, né di superare la carta più alta.
-- L'obbligo vale solo per chi gioca **dopo** la carta di Totem che ha stabilito il colore.
+- L'obbligo vale solo per chi gioca **dopo** la carta di colore che ha stabilito il colore della presa.
 
 ```ts
 function legalCards(hand: Card[], trickSuit: Suit | null): Card[] {
-  if (trickSuit !== 'totem') return hand;
-  const hasTotem = hand.some(c => c.kind === 'suited' && c.suit === 'totem');
-  if (!hasTotem) return hand;
-  return hand.filter(c => c.kind !== 'suited' || c.suit === 'totem');
+  if (trickSuit === null) return hand;
+  const hasSuit = hand.some(c => c.kind === 'suited' && c.suit === trickSuit);
+  if (!hasSuit) return hand;
+  return hand.filter(c => c.kind !== 'suited' || c.suit === trickSuit || c.suit === 'totem');
 }
 ```
 
@@ -247,7 +250,7 @@ Quando si sbaglia, il premio per il rispetto non si conta.
 - Lingua **italiana**, pensata **prima per il telefono**.
 - **Etichette delle figure**: anche nell'interfaccia **J, Q, K, A** (nel codice `Rank` 11, 12, 13, 14). I numeri da 2 a 10 si mostrano così come sono.
 - **Giocare una carta**: un tocco la seleziona, un secondo tocco (o il pulsante "Gioca") la gioca.
-- Le carte **non giocabili** (obbligo di Totem) sono oscurate e non toccabili.
+- Le carte **non giocabili** (obbligo di colore, §5.4) sono oscurate e non toccabili.
 - Quando si gioca un Dio in una situazione di **scelta** (§5.3), compaiono i pulsanti **"Valido"** / **"Chipetl"**, senza valore predefinito; si può annullare prima di scegliere.
 - Quando il Dio è nullo d'ufficio, nessuna domanda: parte con l'etichetta "Nullo".
 - Dichiarazione: si mostrano solo i valori leciti (al mazziere manca quello vietato).
@@ -295,6 +298,7 @@ Regole fisse dell'MVP. A MVP completato si valuterà quali rendere **opzioni att
 | 7 | Punteggio crescente stile **Partita Fiume** (§6.1) | +10 rispetto, +3 per presa, −5 per presa sbagliata |
 | 8 | **Niente bonus +50** a fine partita | +50 a chi rispetta tutte e 6 le mani |
 | 9 | **Sempre 72 carte** | "Piccolo Gioco" consigliato per 2–5 giocatori |
+| 10 | Picche/Cuori/Quadri/Fiori: **obbligo di rispondere a colore** se lo si ha; ammessi anche Totem (taglio) e carte magiche | Nessun obbligo di rispondere a colore nei 4 colori normali |
 
 `RuleConfig` previsto:
 ```ts
