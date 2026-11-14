@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import type { RoomView } from '@taotl/protocol';
 import { useDialogFocus } from '../components/useDialogFocus';
 import { errorMessage } from '../lib/errors';
+import { standings } from '../lib/standings';
 import type { TypedEmit } from '../net/socket';
 
 const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
@@ -28,16 +29,14 @@ export function HandSummary({ view, emit }: { view: RoomView; emit: TypedEmit })
             <thead>
               <tr>
                 <th>Giocatore</th>
-                <th>Dichiarate</th>
-                <th>Fatte</th>
+                <th>Chiamate</th>
+                <th>Prese</th>
                 <th>Punti</th>
                 <th>Totale</th>
               </tr>
             </thead>
             <tbody>
-              {view.seats.map((s) => {
-                const p = game.players.find((x) => x.id === s.id);
-                if (!p) return null;
+              {standings(view.seats, game.players, game.dealerId).map(({ seat: s, player: p, total }) => {
                 const points = p.handScores.at(-1) ?? 0;
                 return (
                   <tr key={s.id} data-testid={`summary-row-${s.id}`} className={s.id === view.me ? 'me' : undefined}>
@@ -47,7 +46,7 @@ export function HandSummary({ view, emit }: { view: RoomView; emit: TypedEmit })
                     <td data-testid="summary-points" className={points > 0 ? 'pos' : points < 0 ? 'neg' : undefined}>
                       {signed(points)}
                     </td>
-                    <td data-testid="summary-total">{p.total}</td>
+                    <td data-testid="summary-total">{total}</td>
                   </tr>
                 );
               })}

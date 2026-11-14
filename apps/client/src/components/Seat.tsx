@@ -28,16 +28,15 @@ export interface SeatProps {
   player: PlayerInfo;
   pos: Point;
   me: boolean;
-  dealer: boolean;
   turn: boolean;
   leader: boolean;
 }
 
-export function Seat({ seat: s, player: p, pos, me, dealer, turn, leader }: SeatProps) {
+/** Targhetta di un posto. Il mazziere non si segna sul tavolo: si vede nella classifica (SPEC §7.4). */
+export function Seat({ seat: s, player: p, pos, me, turn, leader }: SeatProps) {
   const offline = !s.isBot && !s.connected;
   const status = [
     me ? 'tu' : null,
-    dealer ? 'mazziere' : null,
     turn ? 'di turno' : null,
     leader ? 'ha aperto la presa' : null,
     s.isBot ? 'bot' : null,
@@ -50,7 +49,6 @@ export function Seat({ seat: s, player: p, pos, me, dealer, turn, leader }: Seat
       data-testid={`seat-${s.id}`}
       data-me={me}
       data-turn={turn}
-      data-dealer={dealer}
       data-leader={leader}
       data-connected={!offline}
       style={{ left: `${pos.x}%`, top: `${pos.y}%` } as CSSProperties}
@@ -64,12 +62,17 @@ export function Seat({ seat: s, player: p, pos, me, dealer, turn, leader }: Seat
         </span>
       </div>
       <div className="seat-stats">
-        <span title="Prese fatte / dichiarate">
-          prese <b data-testid="stat-made">{p.tricksWon}</b>/<b data-testid="stat-bid">{p.bid ?? '–'}</b>
+        <span>
+          Chiamate <b data-testid="stat-bid">{p.bid ?? '–'}</b>
         </span>
         <span className="stat-cards" title="Carte in mano">
           <CardsIcon />
           <b data-testid="stat-cards">{p.handCount}</b>
+        </span>
+      </div>
+      <div className="seat-stats">
+        <span>
+          Prese <b data-testid="stat-made">{p.tricksWon}</b>
         </span>
         <span className="seat-flags">
           {s.isBot && (
@@ -89,11 +92,6 @@ export function Seat({ seat: s, player: p, pos, me, dealer, turn, leader }: Seat
           )}
         </span>
       </div>
-      {dealer && (
-        <span className="dealer-chip" data-testid="dealer-chip" title="Mazziere" aria-hidden="true">
-          M
-        </span>
-      )}
       {leader && (
         <span className="leader-mark" data-testid="leader-mark" title="Ha aperto la presa" aria-hidden="true">
           <AsteriskIcon />

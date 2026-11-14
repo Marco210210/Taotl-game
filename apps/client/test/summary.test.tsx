@@ -60,6 +60,17 @@ describe('HandSummary', () => {
     await userEvent.click(screen.getByTestId('btn-next-hand'));
     expect(await screen.findByRole('alert')).toHaveTextContent('Non è il momento giusto');
   });
+  it('righe per totale decrescente; a parità ordine dei posti dal mazziere', () => {
+    // a 25, c 25 (mazziere c: a parità c viene prima di a), b -15
+    const players = [
+      { id: 'a', handCount: 0, bid: 1, tricksWon: 1, handScores: [25], total: 25 },
+      { id: 'b', handCount: 0, bid: 1, tricksWon: 0, handScores: [-15], total: -15 },
+      { id: 'c', handCount: 0, bid: 0, tricksWon: 0, handScores: [25], total: 25 },
+    ];
+    render(<Table view={view(game({ players }))} emit={vi.fn()} />);
+    const ids = [...document.querySelectorAll('[data-testid^="summary-row-"]')].map((r) => r.getAttribute('data-testid'));
+    expect(ids).toEqual(['summary-row-c', 'summary-row-a', 'summary-row-b']);
+  });
   it('non compare fuori da handEnd', () => {
     render(<Table view={view(game({ phase: 'playing' }))} emit={vi.fn()} />);
     expect(screen.queryByTestId('hand-summary')).toBeNull();
@@ -112,22 +123,32 @@ describe('Table: fix 4.2', () => {
     const { rerender } = render(<Table view={view(playing())} emit={emit} />);
     const card = document.querySelector('[data-testid="hand"] [data-testid="card"]') as HTMLElement;
     await userEvent.click(card);
-    await userEvent.click(card);
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     rerender(<Table view={view(playing({ turnId: 'b' }))} emit={emit} />);
     expect(screen.queryByRole('alert')).toBeNull();
   });
-  it('ogni posto mostra dichiarate, fatte, carte in mano e punteggio', () => {
+  it('ogni posto mostra "Chiamate N" e "Prese N" su due righe, carte in mano e punteggio', () => {
     render(<Table view={view(playing())} emit={vi.fn()} />);
-    const a = within(screen.getByTestId('seat-a'));
+    const seatA = screen.getByTestId('seat-a');
+    expect(seatA).toHaveTextContent('Chiamate 1');
+    expect(seatA).toHaveTextContent('Prese 1');
+    expect(seatA.textContent).not.toMatch(/\d\s*\/\s*[\d–]/);
+    const a = within(seatA);
     expect(a.getByTestId('stat-bid')).toHaveTextContent('1');
     expect(a.getByTestId('stat-made')).toHaveTextContent('1');
     expect(a.getByTestId('stat-cards')).toHaveTextContent('0');
     expect(a.getByTestId('stat-total')).toHaveTextContent('25');
   });
-  it('mazziere, turno e apertura della presa segnati sui posti', () => {
+  it('prima della dichiarazione: "Chiamate –"', () => {
+    const g = playing({ phase: 'bidding', players: game().players.map((p) => ({ ...p, bid: null, tricksWon: 0 })) });
+    render(<Table view={view(g)} emit={vi.fn()} />);
+    expect(screen.getByTestId('seat-b')).toHaveTextContent('Chiamate –');
+    expect(screen.getByTestId('seat-b')).toHaveTextContent('Prese 0');
+  });
+  it('turno e apertura della presa segnati sui posti; nessun segnalino del mazziere sul tavolo', () => {
     render(<Table view={view(playing())} emit={vi.fn()} />);
-    expect(within(screen.getByTestId('seat-c')).getByTestId('dealer-chip')).toBeInTheDocument();
+    expect(screen.queryByTestId('dealer-chip')).toBeNull();
+    expect(screen.queryByText('M')).toBeNull();
     expect(screen.getByTestId('seat-a')).toHaveAttribute('data-turn', 'true');
     expect(screen.getByTestId('seat-b')).toHaveAttribute('data-turn', 'false');
     expect(within(screen.getByTestId('seat-b')).getByTestId('leader-mark')).toBeInTheDocument();
@@ -140,6 +161,25 @@ describe('Table: fix 4.2', () => {
     expect(within(screen.getByTestId('seat-b')).getByTestId('badge-bot')).toBeInTheDocument();
     expect(within(screen.getByTestId('seat-c')).getByTestId('badge-offline')).toBeInTheDocument();
     expect(within(screen.getByTestId('seat-a')).queryByTestId('badge-offline')).toBeNull();
+  });
+  it("seme della presa al centro e carta che l'ha deciso in risalto (anche se non è la prima)", () => {
+    const g = playing({
+      currentTrick: [
+        { playerId: 'b', card: { kind: 'chipetl', n: 1 }, valid: false, label: null },
+        { playerId: 'c', card: { kind: 'suited', suit: 'quadri', rank: 7 }, valid: true, label: null },
+      ],
+      trickSuit: 'quadri',
+    });
+    render(<Table view={view(g)} emit={vi.fn()} />);
+    expect(screen.getByTestId('trick-suit')).toHaveTextContent('Quadri');
+    expect(screen.getByTestId('trick-suit')).toHaveTextContent('da C');
+    expect(screen.getAllByTestId('trick-slot').map((s) => s.getAttribute('data-decider'))).toEqual(['false', 'true']);
+    expect(within(screen.getByTestId('seat-b')).getByTestId('leader-mark')).toBeInTheDocument();
+  });
+  it('senza carte di colore niente seme al centro', () => {
+    const g = playing({ currentTrick: [{ playerId: 'b', card: { kind: 'chipetl', n: 1 }, valid: false, label: null }], trickSuit: null });
+    render(<Table view={view(g)} emit={vi.fn()} />);
+    expect(screen.queryByTestId('trick-suit')).toBeNull();
   });
   it('niente ultima presa nell interfaccia', () => {
     const g = playing({ tricksThisHand: [{ winnerId: 'b', cards: [{ playerId: 'b', card: { kind: 'suited', suit: 'fiori', rank: 2 }, valid: true, label: null }] }] });

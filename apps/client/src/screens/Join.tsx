@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GodFan } from '../components/GodFan';
 import { errorMessage } from '../lib/errors';
+import { enterFullscreenOnTouch } from '../lib/fullscreen';
 
 export function Join({ error, onJoin }: { error: string | null; onJoin: (nickname: string) => Promise<void> }) {
   const [nickname, setNickname] = useState('');
@@ -20,6 +21,7 @@ export function Join({ error, onJoin }: { error: string | null; onJoin: (nicknam
         className="sheet"
         onSubmit={(e) => {
           e.preventDefault();
+          enterFullscreenOnTouch();
           void submit();
         }}
       >

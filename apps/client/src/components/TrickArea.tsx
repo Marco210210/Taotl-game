@@ -15,12 +15,16 @@ interface TrickProps {
   trickNo: number;
 }
 
+/** Indice della carta che ha deciso il seme della presa: la prima carta di colore (SPEC §5.2). */
+export const deciderIndex = (cards: PlayedCard[]): number => cards.findIndex((p) => p.card.kind === 'suited');
+
 const pct = (p: Point | undefined) => ({ x: `${p?.x ?? 50}%`, y: `${p?.y ?? 50}%` });
 
 /** Carte della presa in corso, ognuna davanti a chi l'ha giocata. */
 export function TrickArea({ cards, seats, seatPos, spotPos, winnerId, trickNo }: TrickProps) {
   const name = (id: string) => seats.find((s) => s.id === id)?.nickname ?? id;
   const w = pct(winnerId ? seatPos.get(winnerId) : undefined);
+  const decider = deciderIndex(cards);
   return (
     <ol
       className={`trick-layer${winnerId ? ' collect' : ''}`}
@@ -32,18 +36,21 @@ export function TrickArea({ cards, seats, seatPos, spotPos, winnerId, trickNo }:
         const at = pct(spotPos.get(p.playerId));
         const from = pct(seatPos.get(p.playerId));
         const winner = p.playerId === winnerId;
+        const decides = i === decider;
         return (
           <li
             key={`${trickNo}-${p.playerId}`}
-            className={`trick-slot${winner ? ' winner' : ''}`}
+            className={`trick-slot${winner ? ' winner' : ''}${decides ? ' decider' : ''}`}
             data-testid="trick-slot"
             data-player={p.playerId}
             data-winner={winner}
+            data-decider={decides}
             style={{ left: at.x, top: at.y, '--sx': from.x, '--sy': from.y, zIndex: i + 1 } as CSSProperties}
           >
             <Card card={p.card} label={p.label} size="trick" interactive={false} />
             <span className="sr-only">
               giocata da {name(p.playerId)}
+              {decides ? ', decide il seme' : ''}
               {winner ? ', vince la presa' : ''}
             </span>
           </li>

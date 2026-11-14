@@ -1,14 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { cardId, godPlayStatus, type Card as CardT, type CardId, type Intent } from '@taotl/engine';
+import { cardId, godPlayStatus, trickSuit, type Card as CardT, type CardId, type Intent } from '@taotl/engine';
 import type { RoomView } from '@taotl/protocol';
 import { BidPanel } from '../components/BidPanel';
 import { GodChoice } from '../components/GodChoice';
 import { Hand } from '../components/Hand';
 import { PauseDialog } from '../components/PauseDialog';
 import { Seat } from '../components/Seat';
-import { TrickArea } from '../components/TrickArea';
+import { StandingsDialog } from '../components/StandingsDialog';
+import { TrickArea, deciderIndex } from '../components/TrickArea';
+import { Pip } from '../components/cardArt/pips';
 import { FeltMark } from '../components/FeltMark';
 import { errorMessage } from '../lib/errors';
+import { suitName } from '../lib/labels';
 import { tableLayout, type RingBox } from '../lib/seatLayout';
 import type { TypedEmit } from '../net/socket';
 import { HandSummary } from './HandSummary';
@@ -43,8 +46,9 @@ function useRingBox() {
   return { ref, box };
 }
 
-export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
+export function Table({ view, emit, connected = true }: { view: RoomView; emit: TypedEmit; connected?: boolean }) {
   const [choosing, setChoosing] = useState<CardId | null>(null);
+  const [showStandings, setShowStandings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const game = view.game;
   const turnId = game?.turnId;
@@ -76,6 +80,8 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
   const trickCards = ended ? ended.cards : game.currentTrick;
   const trickNo = ended ? game.tricksThisHand.length - 1 : game.tricksThisHand.length;
   const leaderId = trickCards[0]?.playerId;
+  const suit = trickSuit(trickCards);
+  const decider = trickCards[deciderIndex(trickCards)];
   const active = game.phase === 'bidding' || game.phase === 'playing';
   const myTurn = game.turnId === view.me && active && !view.pause;
   const playable = new Set<CardId>(myTurn ? game.playableCardIds : []);
@@ -112,7 +118,6 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
                 player={p}
                 pos={layout.seat.get(s.id)!}
                 me={s.id === view.me}
-                dealer={s.id === game.dealerId}
                 turn={active && s.id === game.turnId}
                 leader={s.id === leaderId}
               />
@@ -127,7 +132,29 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
             trickNo={trickNo}
           />
         </div>
+        <div className="hud-right">
+          <button type="button" className="secondary standings-btn" data-testid="btn-standings" onClick={() => setShowStandings(true)}>
+            Classifica
+          </button>
+        </div>
+        {!connected && (
+          <p className="net-status" data-testid="reconnecting" role="status">
+            Riconnessione…
+          </p>
+        )}
         <div className="table-center">
+          {suit && game.legalBids.length === 0 && (
+            <p className="trick-suit" data-testid="trick-suit" data-suit={suit}>
+              <svg viewBox="0 0 24 30" aria-hidden="true">
+                <Pip kind={suit} cx={12} cy={15} w={22} />
+              </svg>
+              <span>
+                {suitName(suit)}
+                {decider && decider.playerId !== view.me && <small> da {nick(decider.playerId)}</small>}
+                {decider && decider.playerId === view.me && <small> da te</small>}
+              </span>
+            </p>
+          )}
           {game.legalBids.length > 0 && !view.pause && (
             <BidPanel allowed={game.legalBids} onBid={(value) => void send({ type: 'bid', value })} />
           )}
@@ -157,6 +184,7 @@ export function Table({ view, emit }: { view: RoomView; emit: TypedEmit }) {
           onCancel={() => setChoosing(null)}
         />
       )}
+      {showStandings && <StandingsDialog view={view} onClose={() => setShowStandings(false)} />}
       {view.pause && <PauseDialog view={view} emit={emit} />}
     </main>
   );

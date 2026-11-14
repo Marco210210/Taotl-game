@@ -23,7 +23,7 @@ describe('Lobby', () => {
     expect(screen.getByTestId('btn-start')).toBeEnabled();
     expect(screen.getByTestId('btn-kick-b')).toBeInTheDocument();
     expect(screen.queryByTestId('btn-kick-a')).toBeNull();
-    expect(screen.getByTestId('invite-link').textContent).toContain('/r/K7QX');
+    expect(screen.getByTestId('btn-copy-link').getAttribute('data-url')).toContain('/r/K7QX');
   });
   it('start disabilitato con meno di 2 posti', () => {
     render(<Lobby view={mkView('a', ['a'])} {...actions()} />);
@@ -35,7 +35,7 @@ describe('Lobby', () => {
     expect(screen.queryByTestId('btn-start')).toBeNull();
     expect(screen.queryByTestId('btn-kick-a')).toBeNull();
     expect(screen.getByText('In attesa che l\'host avvii la partita')).toBeInTheDocument();
-    expect(screen.getByTestId('invite-link').textContent).toContain('/r/K7QX');
+    expect(screen.getByTestId('btn-copy-link').getAttribute('data-url')).toContain('/r/K7QX');
   });
   it("mostra l'errore di un'azione host fallita", async () => {
     const a = { ...actions(), addBot: vi.fn().mockResolvedValue({ ok: false, error: 'room-full' }) };

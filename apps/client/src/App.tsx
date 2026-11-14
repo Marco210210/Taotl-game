@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { navigate } from './Link';
+import { FullscreenButton } from './components/FullscreenButton';
 import { RotateNotice } from './components/RotateNotice';
 import { Home } from './screens/Home';
 import { Room } from './screens/Room';
@@ -36,6 +37,7 @@ export function App() {
   return (
     <>
       <RotateNotice />
+      <FullscreenButton />
       {m ? <Room key={m[1]} code={m[1]!.toUpperCase()} /> : <Home navigate={navigate} />}
     </>
   );

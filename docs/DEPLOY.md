@@ -15,7 +15,8 @@ Lo script `scripts/publish.mjs`:
 
 1. impacchetta la **cartella di lavoro locale** (non git) con `tar`, escludendo
    `node_modules`, `dist`, `build`, `.git`, `.claude`, `.playwright-mcp`, `.superpowers`,
-   `test-results`, `playwright-report`, `taotl.zip`, `.mcp.json` e `skills-lock.json`;
+   `test-results`, `playwright-report`, `taotl.zip`, `.mcp.json`, `skills-lock.json` e `carte-originali`
+   (le foto del mazzo originale, che restano solo in locale);
 2. la invia via `ssh` in `~/progetti/.Taotl-game-upload` sul server e stampa quanti file e MB ha trasferito;
 3. la sincronizza in `~/progetti/Taotl-game` con `rsync --delete`, così i file cancellati in locale
    spariscono anche dal server (`node_modules` e `dist` del server restano);
@@ -53,6 +54,21 @@ Per lanciarlo a mano: `ssh oracle-server "bash ~/progetti/Taotl-game/deploy.sh"`
 Variabili facoltative del server (vedi `apps/server/src/config.ts`): `BOT_MOVE_DELAY_MS`,
 `TRICK_PAUSE_MS`, `DISCONNECT_GRACE_MS`, `ROOM_IDLE_MS`. Dopo averle modificate:
 `systemctl --user restart taotl-game`.
+
+## App installabile e cache
+
+Il client è una PWA (manifest + service worker generati da `vite-plugin-pwa` a ogni build).
+Gli header di cache li imposta Node (`apps/server/src/app.ts`): `index.html`, `sw.js`, `workbox-*.js`
+e `manifest.webmanifest` con `no-cache`, `/assets/*` con un anno `immutable`. Caddy li inoltra
+senza modificarli. Per controllare dopo un deploy:
+
+```sh
+curl -sI https://gioco-taotl.130.110.16.97.sslip.io/sw.js | grep -i cache-control      # no-cache
+curl -sI https://gioco-taotl.130.110.16.97.sslip.io/manifest.webmanifest | grep -i -e cache -e type
+```
+
+Icone e screenshot del manifest stanno in `apps/client/public/`; si rigenerano con
+`node scripts/pwa-assets.mjs icons` e `node scripts/pwa-assets.mjs screenshots <url di un server avviato>`.
 
 ## Comandi utili (sul server)
 

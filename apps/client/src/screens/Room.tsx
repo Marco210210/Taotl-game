@@ -33,7 +33,7 @@ export function TakenOver({ onResume }: { onResume: () => void }) {
 }
 
 export function Room({ code }: { code: string }) {
-  const { view, error, needsJoin, join, emit, takenOver, resume } = useRoom(code);
+  const { view, error, needsJoin, join, emit, takenOver, resume, connected } = useRoom(code);
   if (takenOver) return <TakenOver onResume={resume} />;
   if (error === 'room-not-found' || error === 'game-started') return <Failure error={error} />;
   if (needsJoin) return <Join error={error} onJoin={join} />;
@@ -45,7 +45,7 @@ export function Room({ code }: { code: string }) {
       </main>
     );
   }
-  if (view.status === 'playing') return <Table view={view} emit={emit} />;
+  if (view.status === 'playing') return <Table view={view} emit={emit} connected={connected} />;
   if (view.status === 'ended') return <FinalRanking view={view} emit={emit} />;
   return (
     <Lobby

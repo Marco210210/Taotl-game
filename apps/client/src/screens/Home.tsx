@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { GodFan } from '../components/GodFan';
 import { getSocket, request, setToken } from '../net/socket';
 import { errorMessage } from '../lib/errors';
+import { enterFullscreenOnTouch } from '../lib/fullscreen';
+import { InstallButton } from '../components/InstallButton';
 
 export function Home({ navigate }: { navigate: (path: string) => void }) {
   const [nickname, setNickname] = useState('');
@@ -25,6 +27,7 @@ export function Home({ navigate }: { navigate: (path: string) => void }) {
         className="sheet"
         onSubmit={(e) => {
           e.preventDefault();
+          enterFullscreenOnTouch();
           void create();
         }}
       >
@@ -38,6 +41,7 @@ export function Home({ navigate }: { navigate: (path: string) => void }) {
           Crea stanza
         </button>
         {error && <p role="alert">{errorMessage(error)}</p>}
+        <InstallButton />
       </form>
     </main>
   );

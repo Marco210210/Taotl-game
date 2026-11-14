@@ -89,10 +89,13 @@ test('mano da 36 carte a 844x390: niente scroll della pagina, ultima carta raggi
     );
     expect(hits).toBe(true);
 
+    // un solo tocco gioca la carta: esce dalla mano e compare sul tavolo
     const target = (await last.getAttribute('aria-disabled')) === 'false' ? last : page.locator(`${CARDS}[aria-disabled="false"]`).last();
+    const targetId = await target.getAttribute('data-card-id');
     await target.click({ timeout: 5000, position: CARD_CORNER });
-    await expect(target).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('btn-play')).toBeVisible();
+    await expect(page.locator(CARDS)).toHaveCount(35);
+    await expect(page.locator(`[data-testid="trick"] [data-card-id="${targetId}"]`)).toHaveCount(1);
+    await expect(page.getByTestId('btn-play')).toHaveCount(0);
   } finally {
     await a.context.close();
   }
@@ -109,8 +112,9 @@ test('12 giocatori a 844x390: posti dentro lo schermo, senza sovrapposizioni, ca
     expect(await pageHeight(page)).toBeLessThanOrEqual(PHONE.height);
     await expect(page.locator(CARDS)).toHaveCount(6);
 
-    // il mazziere ha il segnalino, chi deve agire è evidenziato
-    await expect(page.locator('[data-testid="dealer-chip"]')).toHaveCount(1);
+    // niente segnalino del mazziere sul tavolo; chi deve agire è evidenziato
+    await expect(page.locator('[data-testid="dealer-chip"]')).toHaveCount(0);
+    await expect(page.getByTestId('btn-standings')).toBeVisible();
     await expect(page.locator('[data-testid^="seat-"][data-turn="true"]')).toHaveCount(1, { timeout: 15_000 });
 
     // si gioca finché sul tavolo ci sono almeno 6 carte: non devono sovrapporsi

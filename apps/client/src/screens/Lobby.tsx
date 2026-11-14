@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RoomView } from '@taotl/protocol';
 import { GodFan } from '../components/GodFan';
+import { InstallButton } from '../components/InstallButton';
 import { errorMessage } from '../lib/errors';
 
 type Result = { ok: boolean; error?: string } | void;
@@ -14,7 +15,8 @@ export interface LobbyActions {
 export function Lobby({ view, addBot, kick, reorder, start }: { view: RoomView } & LobbyActions) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const linkRef = useRef<HTMLSpanElement>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
   const isHost = view.hostId === view.me;
   const ids = view.seats.map((s) => s.id);
   const link = `${location.origin}/r/${view.code}`;
@@ -30,15 +32,23 @@ export function Lobby({ view, addBot, kick, reorder, start }: { view: RoomView }
     return run(() => reorder(next));
   };
   const copy = async () => {
-    try {
-      if (!navigator.clipboard) throw new Error('no clipboard');
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      const el = linkRef.current;
-      if (el) window.getSelection()?.selectAllChildren(el);
+    if (!(await copyText(link))) return setError('copy-failed');
+    setError(null);
+    setCopied(true);
+    clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 1800);
+  };
+  const share = async () => {
+    const data = { title: 'Il Taotl', text: `Vieni a giocare a Il Taotl: stanza ${view.code}`, url: link };
+    if (typeof navigator.share === 'function' && (!navigator.canShare || navigator.canShare(data))) {
+      try {
+        await navigator.share(data);
+      } catch {
+        /* condivisione annullata */
+      }
+      return;
     }
+    await copy();
   };
 
   return (
@@ -50,13 +60,17 @@ export function Lobby({ view, addBot, kick, reorder, start }: { view: RoomView }
           {view.code}
         </h1>
         <div className="invite">
-          <span data-testid="invite-link" ref={linkRef}>
-            {link}
-          </span>
-          <button type="button" className="secondary" onClick={copy}>
-            {copied ? 'Copiato' : 'Copia link'}
+          <button type="button" className="secondary" data-testid="btn-copy-link" data-url={link} onClick={() => void copy()}>
+            {copied ? 'Copiato!' : 'Copia link'}
           </button>
+          <button type="button" data-testid="btn-share" onClick={() => void share()}>
+            Condividi
+          </button>
+          <span className="sr-only" role="status">
+            {copied ? 'Link copiato negli appunti' : ''}
+          </span>
         </div>
+        <InstallButton />
       </div>
       <section className="sheet">
         <h2>
@@ -106,4 +120,29 @@ export function Lobby({ view, addBot, kick, reorder, start }: { view: RoomView }
       </section>
     </main>
   );
+}
+
+/** Copia negli appunti: Clipboard API, con ripiego su execCommand per i browser più vecchi. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* si prova il ripiego */
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
 }

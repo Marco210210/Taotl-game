@@ -26,7 +26,7 @@ test('riconnessione: B ricarica la pagina, rientra nello stesso posto con la ste
     await b.page.reload();
     await expect(b.page.locator(HAND_CARDS).first()).toBeVisible({ timeout: 15_000 });
     await expect(b.page.getByText('Bruno').first()).toBeVisible();
-    await expect(b.page.getByTestId('invite-link')).toHaveCount(0);
+    await expect(b.page.getByTestId('btn-copy-link')).toHaveCount(0);
     expect(await idsOf()).toEqual(before);
 
     // la partita prosegue fino al riepilogo su entrambe le pagine
@@ -38,5 +38,48 @@ test('riconnessione: B ricarica la pagina, rientra nello stesso posto con la ste
     );
   } finally {
     await Promise.all([a, b].map((x) => x.context.close()));
+  }
+});
+
+test("app in background (es. WhatsApp): al ritorno riconnessione immediata, senza schermate d'errore né d'ingresso", async ({ browser }) => {
+  const a = await newPlayer(browser);
+  const page = a.page;
+  const setVisibility = (state: 'hidden' | 'visible') =>
+    page.evaluate((s) => {
+      Object.defineProperty(document, 'visibilityState', { value: s, configurable: true });
+      Object.defineProperty(document, 'hidden', { value: s === 'hidden', configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, state);
+  try {
+    await createRoom(page, 'Anna');
+    await page.getByTestId('btn-add-bot').click();
+    await page.getByTestId('btn-start').click();
+    await expect(page.locator(HAND_CARDS)).toHaveCount(36);
+    const idsOf = () => page.locator(HAND_CARDS).evaluateAll((els) => els.map((e) => e.getAttribute('data-card-id')).sort());
+    const before = await idsOf();
+
+    // la pagina va in background e la rete cade: la connessione si chiude
+    await setVisibility('hidden');
+    await a.context.setOffline(true);
+    await expect(page.getByTestId('reconnecting')).toBeVisible({ timeout: 60_000 });
+    await page.waitForTimeout(1500); // abbastanza perché socket.io entri nell'attesa crescente tra i tentativi
+
+    // si torna nell'app: rete di nuovo su e pagina visibile → riconnessione subito
+    await a.context.setOffline(false);
+    const t0 = Date.now();
+    await setVisibility('visible');
+    await expect(page.getByTestId('reconnecting')).toBeHidden({ timeout: 4000 });
+    expect(Date.now() - t0, 'riconnessione immediata').toBeLessThan(4000);
+
+    // stesso posto, stessa mano, niente ingresso né errori
+    await expect(page.getByTestId('table')).toBeVisible();
+    await expect(page.getByTestId('input-nickname')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.locator('[data-testid^="seat-"][data-me="true"]')).toHaveAttribute('data-connected', 'true');
+    expect(await idsOf()).toEqual(before);
+    // e la partita prosegue
+    await runUntil([page], async () => (await page.locator(HAND_CARDS).count()) < 36, { label: 'si gioca dopo il ritorno' });
+  } finally {
+    await a.context.close();
   }
 });

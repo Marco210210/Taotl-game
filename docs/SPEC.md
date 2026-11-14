@@ -231,6 +231,7 @@ Quando si sbaglia, il premio per il rispetto non si conta.
   3. **Termina partita**, con la classifica attuale.
 - **Disconnessione dell'host**: il ruolo di host (e le scelte sopra) passa **subito e automaticamente** al **primo giocatore umano connesso** nell'ordine dei posti, a partire dal posto successivo a quello del vecchio host. Se il vecchio host rientra, **non torna host**.
 - Se non resta nessun umano connesso, la partita resta in pausa e la stanza si elimina dopo il tempo di inattività (§7.1).
+- **Uscire dall'app non fa uscire dalla partita** (es. passare a WhatsApp): la connessione si chiude, ma il posto resta. Al ritorno (eventi `visibilitychange`, `focus`, `online`) il client si riconnette subito col token in `localStorage`, senza schermate di errore né di ingresso. I 2 minuti prima delle scelte dell'host bastano per una breve uscita e restano invariati: valgono solo se tocca proprio a chi è uscito, e una connessione sospesa per meno di ~45 s non risulta nemmeno disconnessa.
 - Lo stato delle partite resta **in memoria** sul server: se il server si riavvia, le partite in corso si perdono (rischio accettato nell'MVP).
 
 ### 7.3 Server autoritativo e informazioni visibili
@@ -247,13 +248,29 @@ Quando si sbaglia, il premio per il rispetto non si conta.
 - Test obbligatorio: per ogni stato di esempio, la vista di un giocatore non contiene nessuna carta delle mani altrui né delle carte avanzate.
 
 ### 7.4 Interfaccia (punti decisi)
-Restyling del 2026-11-14: carte nello stile del mazzo originale, tavolo orizzontale stile poker.
+Restyling del 2026-11-14: carte nello stile del mazzo originale, tavolo orizzontale stile poker. Correzioni del 2026-11-14 (seconda serie): preselezione e giocata con un tocco, classifica sempre disponibile, tutto schermo, app installabile, niente selezione del testo.
 
 **Generale**
 - Lingua **italiana**. Il gioco è pensato **in orizzontale**: tutte le schermate (home, ingresso, lobby, tavolo, riepilogo, classifica) hanno un layout orizzontale. Riferimenti: **844×390** (telefono in orizzontale) e **1440×900** (desktop).
 - **In verticale** (orientamento verticale e larghezza ≤ 900px) qualsiasi schermata è coperta da un avviso **"Ruota il telefono"**; lo stato della partita resta intatto sotto. Fa eccezione solo la pagina di sviluppo `/dev/cards`.
 - **Etichette delle figure**: J, Q, K, A (nel codice `Rank` 11, 12, 13, 14). I numeri da 2 a 10 si mostrano così come sono.
 - **Niente chat** nell'MVP.
+- **Comportamento da app, non da sito**: niente selezione del testo (`user-select: none`), niente menu tenendo premuto (`-webkit-touch-callout: none`, `contextmenu` bloccato), niente evidenziazione al tocco, immagini e SVG non trascinabili. Eccezione: i campi di input restano scrivibili e selezionabili.
+
+**Tutto schermo e orientamento**
+- Nel browser, al primo tocco che entra nel gioco (**"Crea stanza"**, **"Entra"**) si chiede il **tutto schermo** (Fullscreen API) e il **blocco in orizzontale** (`screen.orientation.lock`), dove il browser lo permette; se rifiuta, si continua senza.
+- Un pulsante discreto in alto a destra esce dal tutto schermo o ci rientra. Se il browser ha tolto il tutto schermo (es. dopo un passaggio a un'altra app), compare un tocco ben visibile **"Torna a tutto schermo"**.
+- Nell'app installata il gioco si apre già a tutto schermo e in orizzontale: i pulsanti non compaiono.
+- La schermata "Ruota il telefono" resta come ripiego.
+
+**App installabile (PWA)**
+- Manifest completo (nome "Il Taotl", nome breve "Taotl", `display: fullscreen` con `display_override` e ripiego `standalone`, orientamento orizzontale, icone 192/512 e maskable, screenshot orizzontali) e **service worker**.
+- Il service worker mette in cache l'interfaccia e gli asset; **non** tocca mai il traffico Socket.IO/WebSocket. Le pagine si chiedono prima alla rete (con ripiego sulla cache): dopo una pubblicazione, all'apertura successiva si vede subito la versione nuova, mai una vecchia.
+- Pulsante **"Installa l'app"** nella home e nella lobby: usa `beforeinstallprompt` (Android, Chrome, Edge, anche desktop); su iPhone/iPad apre le istruzioni illustrate "Condividi → Aggiungi alla schermata Home". Nascosto se l'app è già installata o se il browser non permette di installarla.
+- Il server manda `sw.js`, il manifest e `index.html` con `Cache-Control: no-cache`; gli asset con hash nel nome con cache lunga e `immutable`.
+
+**Lobby**
+- Il link della stanza non si mostra come testo da selezionare: due pulsanti, **"Copia link"** (Clipboard API, conferma "Copiato!") e **"Condividi"** (Web Share API: sul telefono apre WhatsApp e le altre app; dove non c'è, fa come "Copia link").
 
 **Carte** (riferimento di stile: foto in `docs/carte-originali/`)
 - Disegni **originali** in SVG che richiamano chiaramente lo stile del mazzo originale, senza ricalcarne le illustrazioni: carta bianca a spigoli arrotondati, asterisco rosso in alto al centro, indici negli angoli (seme sopra, valore sotto), metà inferiore capovolta.
@@ -270,16 +287,20 @@ Restyling del 2026-11-14: carte nello stile del mazzo originale, tavolo orizzont
 **Tavolo**
 - **Tavolo ovale** visto dall'alto, giocatori seduti intorno **nell'ordine dei posti**, in senso orario. **Io sono sempre in basso al centro**, con la mia mano sotto il tavolo, a ventaglio sovrapposto, **ordinata per colore** (scorribile solo se non entra).
 - La disposizione dei posti si adatta al numero di giocatori, **da 2 a 12**, senza sovrapposizioni.
-- Ogni posto mostra: **nickname**, **dichiarate/fatte**, **punteggio totale**, **numero di carte in mano**, **stato di connessione** e **badge bot** (anche "bot al suo posto").
-- Indicatori: **segnalino del mazziere** sul posto del mazziere; **evidenziazione animata** di chi deve giocare o dichiarare; **asterisco rosso** su chi ha aperto la presa in corso.
+- Ogni posto mostra: **nickname**, **punteggio totale**, **"Chiamate N"** e **"Prese N"** su due righe separate (prima della dichiarazione "Chiamate –"; niente frazioni tipo 0/5), **numero di carte in mano**, **stato di connessione** e **badge bot** (anche "bot al suo posto").
+- Indicatori: **evidenziazione animata** di chi deve giocare o dichiarare; **asterisco rosso** e bordo rosso su chi ha aperto la presa in corso. **Nessun segnalino del mazziere sul tavolo**: il mazziere si vede nella classifica.
+- Al centro del tavolo, appena la presa ha un colore (§5.2), un'etichetta col **seme della presa**; la carta che l'ha deciso (la prima carta di colore, che può non essere la prima giocata se prima sono usciti Chipetl o Dei) è messa in risalto.
+- In alto a destra il pulsante **"Classifica"**, sempre disponibile durante la partita (vedi sotto).
 - In alto a sinistra: numero della mano e "Dichiarate X / N".
 - Le carte della **presa in corso** compaiono al centro del tavolo, **davanti a chi le ha giocate**. A presa completata restano visibili ~2 secondi con il vincitore evidenziato, poi **scivolano verso il vincitore** con un'animazione breve. Chi preferisce meno movimento (`prefers-reduced-motion`) non vede animazioni.
-- **Giocare una carta**: un tocco la seleziona (si alza), un secondo tocco o il pulsante **"Gioca"** la gioca.
-- Le carte **non giocabili** (obbligo di colore, §5.4) sono oscurate e non toccabili.
+- **Giocare una carta, quando è il mio turno**: **un solo tocco** su una carta giocabile la gioca subito, senza conferma né pulsante "Gioca". Unica eccezione la scelta Valido/Chipetl di un Dio (§5.3), che è una regola e non una conferma.
+- **Preselezione, quando non è il mio turno**: un tocco solleva una carta, un altro tocco la abbassa, toccarne un'altra sposta la selezione. Quando arriva il mio turno la carta **non si gioca da sola**: resta sollevata e un tocco la gioca. Se nel frattempo è diventata non giocabile (§5.4), si deseleziona da sola.
+- Durante il mio turno le carte **non giocabili** (obbligo di colore, §5.4) sono oscurate e non toccabili. Niente timer di turno.
 - **Dichiarazione**: un pannello al centro del tavolo con i soli valori leciti (al mazziere manca quello vietato).
 - **Dio in situazione di scelta** (§5.3): pannello con **"Valido"** / **"Chipetl"**, senza valore predefinito; si può annullare prima di scegliere. Se il Dio è nullo d'ufficio, nessuna domanda: parte con l'etichetta "Nullo".
 - **Niente "ultima presa"** nell'interfaccia: non c'è né pulsante né vista. `tricksThisHand` resta nella vista del server perché serve al bot.
-- **Riepilogo a fine mano** sopra il tavolo: dichiarate, fatte, punti della mano, totale.
+- **Riepilogo a fine mano** sopra il tavolo: dichiarate, fatte, punti della mano, totale. Righe ordinate per **totale decrescente**; a parità, nell'ordine dei posti a partire dal mazziere.
+- **Classifica durante la partita** (pulsante "Classifica"): totali **solo delle mani concluse**, mai i punti della mano in corso (durante la 3ª mano si vedono i totali dopo la 2ª). In alto "Dopo la mano X di 6", oppure "Nessuna mano conclusa". Ordine per totale decrescente; a parità (anche tutti a 0), ordine dei posti a partire dal mazziere della mano in corso. Una piccola **"M"** accanto al mazziere della mano in corso.
 
 **Estetica**
 - Un tavolo da gioco curato e coerente con le carte: sala in legno scuro, panno verde, bordo nero con fascia bianca a greca rossa, targhette dei posti in cartoncino bianco con inchiostro nero.

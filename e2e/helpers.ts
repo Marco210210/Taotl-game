@@ -29,11 +29,8 @@ export async function playTurnViaUI(page: Page): Promise<TurnKind> {
   if (await page.getByTestId('my-turn').isVisible()) {
     const card = page.locator('[data-testid="hand"] [data-testid="card"][aria-disabled="false"]').first();
     if (!(await card.isVisible())) return 'none';
-    // primo click seleziona, secondo gioca; si tocca l'indice in alto a sinistra, sempre scoperto nel ventaglio
-    const ok = await attempt(async () => {
-      await card.click({ timeout: ACTION_TIMEOUT, position: CARD_CORNER });
-      await card.click({ timeout: ACTION_TIMEOUT, position: CARD_CORNER });
-    });
+    // nel mio turno un solo tocco gioca; si tocca l'indice in alto a sinistra, sempre scoperto nel ventaglio
+    const ok = await attempt(() => card.click({ timeout: ACTION_TIMEOUT, position: CARD_CORNER }));
     const valido = page.getByTestId('btn-valido');
     if (await valido.isVisible()) await attempt(() => valido.click({ timeout: ACTION_TIMEOUT }));
     return ok ? 'play' : 'none';
@@ -77,16 +74,16 @@ export async function createRoom(page: Page, nickname: string): Promise<string> 
   await page.goto('/');
   await page.getByTestId('input-nickname').fill(nickname);
   await page.getByTestId('btn-create').click();
-  const link = page.getByTestId('invite-link');
-  await expect(link).toBeVisible();
-  return (await link.innerText()).trim();
+  const copy = page.getByTestId('btn-copy-link');
+  await expect(copy).toBeVisible();
+  return (await copy.getAttribute('data-url'))!;
 }
 
 export async function joinRoom(page: Page, url: string, nickname: string): Promise<void> {
   await page.goto(url);
   await page.getByTestId('input-nickname').fill(nickname);
   await page.getByTestId('btn-join').click();
-  await expect(page.getByTestId('invite-link')).toBeVisible();
+  await expect(page.getByTestId('btn-copy-link')).toBeVisible();
 }
 
 /** Numero con segno: accetta il meno Unicode. */

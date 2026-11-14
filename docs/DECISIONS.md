@@ -28,3 +28,26 @@ Formato: **decisione** — perché — costo se sbagliata.
 - **Rotta di sviluppo `/dev/table?n=2..12&phase=…`** con dati finti, esclusa dalla build come `/dev/cards` — per controllare il tavolo senza giocare una partita.
 - **Riepilogo di fine mano in una finestra sopra il tavolo**; al termine della 6ª mano il pulsante dell'host dice "Vedi la classifica".
 - **Animazioni: carta che arriva dal posto (220ms), presa che scivola al vincitore dopo ~1,25s (460ms), alone del turno**; tutte spente con `prefers-reduced-motion`.
+
+## Correzioni del 2026-11-14, seconda serie (SPEC §7.2, §7.4)
+- **Giocata con un tocco: sparisce il pulsante "Gioca"**; resta solo la scelta Valido/Chipetl dei Dei (§5.3) — richiesta esplicita — per tornare indietro basta ripristinare la doppia conferma in `Hand.tsx`.
+- **Preselezione anche durante la dichiarazione e la pausa di fine presa** (qualsiasi momento che non sia il mio turno di gioco) — è "fuori turno" per il giocatore — nessun costo, la carta non parte mai da sola.
+- **Fuori turno tutte le carte sono toccabili e non oscurate**: il server manda le carte giocabili solo nel mio turno, quindi l'obbligo di colore si applica (e deseleziona) quando il turno arriva.
+- **Riepilogo e classifica usano lo stesso ordinamento** (`lib/standings.ts`): totale decrescente, a parità ordine dei posti dal mazziere; nel riepilogo è il mazziere della mano appena finita, che è ancora quello della vista.
+- **I totali della classifica sono la somma di `handScores`**, non `total`, così per costruzione non entrano mai punti della mano in corso.
+- **Posizione in classifica a pari merito**: stesso numero, mostrato solo sulla prima riga del gruppo.
+- **Chi ha aperto la presa: asterisco rosso e bordo rosso sulla targhetta**; la carta che ha deciso il seme ha un contorno rosso; l'etichetta al centro dice anche chi l'ha giocata ("Totem da Bot 1") — la carta può non essere la prima, così si capisce quale è.
+- **Targhette su tre righe** (nome e punti; "Chiamate N" e carte in mano; "Prese N" e badge); con più di 8 giocatori il testo è più piccolo — con le due righe separate a 12 giocatori su 844×390 le targhette si sovrapponevano.
+- **Tutto schermo automatico solo su dispositivi touch** (`pointer: coarse`), al tocco su "Crea stanza" o "Entra"; su desktop solo col pulsante — su un computer il tutto schermo non richiesto disturba e non serve a bloccare l'orientamento.
+- **"Torna a tutto schermo" si ricorda per la scheda** (`sessionStorage`): compare se il giocatore aveva scelto il tutto schermo e il browser l'ha tolto; dopo "Esci da tutto schermo" non ricompare.
+- **Riconnessione al ritorno in primo piano**: con il socket chiuso si riapre subito (saltando l'attesa crescente di socket.io); con il socket apparentemente aperto si fa una sonda (rientro col token) con timeout di 2,5 s, e se non risponde si riapre. Durante la riconnessione il tavolo resta com'era con una piccola scritta "Riconnessione…".
+- **I 2 minuti di §7.2 restano invariati** — contano solo se tocca proprio a chi è uscito, e socket.io si accorge della disconnessione solo dopo ~45 s (ping 25 s + timeout 20 s): una breve uscita su WhatsApp di solito non risulta nemmeno disconnessa.
+- **Service worker con vite-plugin-pwa (generateSW), registrato a mano senza ricaricare la pagina**: precache di JS, CSS e icone; `index.html` fuori dalla precache e pagine in "rete prima" (ripiego in cache dopo 4 s o offline); `skipWaiting` + `clientsClaim` — così dopo una pubblicazione si apre subito la versione nuova e una partita in corso non viene mai ricaricata dal service worker.
+- **Font di Google in cache dal service worker** (CSS stale-while-revalidate, file cache-first) — l'app si apre subito anche con rete lenta.
+- **Header di cache impostati da Node (Express), non da Caddy**: `no-cache` per `index.html`, `sw.js`, `workbox-*.js` e manifest; un anno `immutable` per `/assets/*`; un giorno per icone e screenshot. Caddy (`/etc/caddy/gioco-taotl.Caddyfile`) inoltra gli header così come sono, quindi non va modificato.
+- **Icona: carta bianca inclinata con asterisco rosso e maschera del Totem su panno verde**; versioni normale, maskable e apple-touch generate da `scripts/pwa-assets.mjs icons`; gli screenshot del manifest (2 larghi 1440×900, 2 da telefono 1688×780) da `scripts/pwa-assets.mjs screenshots <url>` sul gioco vero coi bot.
+- **`beforeinstallprompt` intercettato** (niente mini-barra del browser) e usato dal pulsante "Installa l'app"; il pulsante non compare dove il browser non lo permette (es. Firefox desktop) né nell'app installata.
+- **Su iPhone/iPad le istruzioni si riconoscono dallo user agent** (iPadOS si presenta come Mac: si guarda anche il touch).
+- **Link della stanza solo nei pulsanti "Copia link" e "Condividi"**: il link non si vede più come testo; il codice grande resta per dettarlo a voce. Se la copia fallisce compare un messaggio che invita a mandare il codice.
+- **Menu contestuale e trascinamento bloccati su tutta l'app** (non solo carte e tavolo), tranne nei campi di input — comportamento da app coerente su ogni schermata.
+- **Lighthouse 11.7.1 per il controllo PWA** — dalla versione 12 Lighthouse non ha più la categoria PWA.

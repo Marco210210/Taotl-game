@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="44%" r="62%">
+      <stop offset="0" stop-color="#2a7448"/>
+      <stop offset="0.6" stop-color="#1e5c37"/>
+      <stop offset="1" stop-color="#113a22"/>
+    </radialGradient>
+  </defs>
+  <rect x="8" y="8" width="496" height="496" rx="104" fill="url(#felt)" stroke="#191714" stroke-width="16"/>
+  
+  <g transform="translate(256 262) scale(1) rotate(-7)">
+    <rect x="-118" y="-182" width="236" height="364" rx="22" fill="#fbfaf5" stroke="#191714" stroke-width="7"/>
+    <g transform="translate(0 -138)"><path d="M0 -15v30M-13 -7.5l26 15M13 -7.5l-26 15" stroke="#d9262c" stroke-width="6.5" stroke-linecap="round"/></g>
+    <g transform="translate(0 138) rotate(180)"><path d="M0 -15v30M-13 -7.5l26 15M13 -7.5l-26 15" stroke="#d9262c" stroke-width="6.5" stroke-linecap="round"/></g>
+    <g transform="translate(0 4) scale(6.6) translate(-12 -15.6)">
+    <path d="M4 3.2h16v17.4c0 4.4-3.6 7.6-8 7.6s-8-3.2-8-7.6Z" fill="#f3d012" stroke="#191714" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M6.6 10.2h4v2.2h-4Zm6.8 0h4v2.2h-4Z" fill="#191714"/>
+    <path d="M12 12.6 10.2 18h3.6Z" fill="#191714"/>
+    <path d="M8.2 21.4h7.6v2.2H8.2Z" fill="#191714"/></g>
+  </g>
+</svg>

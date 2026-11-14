@@ -158,7 +158,7 @@ export function Card({ card, label = null, disabled = false, dimmed = false, sel
   );
   if (!card) {
     return (
-      <span data-testid="card-back" role="img" aria-label="Carta coperta" className={`card card-${size} card-back static ${className}`}>
+      <span data-testid="card-back" draggable={false} role="img" aria-label="Carta coperta" className={`card card-${size} card-back static ${className}`}>
         {art}
       </span>
     );
@@ -178,6 +178,7 @@ export function Card({ card, label = null, disabled = false, dimmed = false, sel
         aria-label={cardLabel(card) + (label ? ` (${label})` : '')}
         aria-disabled="true"
         role="img"
+        draggable={false}
         className={`card card-${size} suit-${suit} static ${className}`}
       >
         {face}
@@ -192,6 +193,7 @@ export function Card({ card, label = null, disabled = false, dimmed = false, sel
       aria-label={cardLabel(card)}
       aria-disabled={disabled ? 'true' : 'false'}
       aria-pressed={selected ? 'true' : 'false'}
+      draggable={false}
       className={`card card-${size} suit-${suit}${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}${dimmed ? ' dimmed' : ''} ${className}`}
       onClick={disabled ? undefined : onClick}
     >
