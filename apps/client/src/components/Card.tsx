@@ -1,10 +1,13 @@
 import { cardId, type Card as CardT, type Rank, type Suit } from '@taotl/engine';
 import { cardLabel, rankLabel } from '../lib/labels';
-import { ChipetlFace, Fret, GodFace } from './cardArt/faces';
-import { SUIT_COLOR, SuitGlyph } from './cardArt/glyphs';
+import { CourtFigure, FIGURES } from './cardArt/figures';
+import { BackArt, ChipetlArt, GodArt } from './cardArt/gods';
+import { CARD_H, CARD_W, INK, MID, SUIT_INK } from './cardArt/ink';
+import { Pip, type PipKind } from './cardArt/pips';
 
 export interface CardProps {
-  card: CardT;
+  /** Assente: carta coperta (retro). */
+  card?: CardT;
   label?: 'Chipetl' | 'Nullo' | null;
   disabled?: boolean;
   /** Illegale adesso (tocca a me, ma la carta non è giocabile): attenuata. */
@@ -14,11 +17,10 @@ export interface CardProps {
   size?: 'hand' | 'trick' | 'mini';
   /** false: carta solo da guardare (non è un bottone). */
   interactive?: boolean;
+  className?: string;
 }
 
-type Size = NonNullable<CardProps['size']>;
-
-/** Posizioni dei simboli (colonna 0-2, riga 0-4) come sulle carte da gioco classiche. */
+/** Posizioni dei simboli (colonna 0-2, riga 0-4) come sulle carte classiche. */
 const PIPS: Record<number, Array<[number, number]>> = {
   2: [[1, 0], [1, 4]],
   3: [[1, 0], [1, 2], [1, 4]],
@@ -30,94 +32,141 @@ const PIPS: Record<number, Array<[number, number]>> = {
   9: [[0, 0], [2, 0], [0, 4 / 3], [2, 4 / 3], [1, 2], [0, 8 / 3], [2, 8 / 3], [0, 4], [2, 4]],
   10: [[0, 0], [2, 0], [1, 2 / 3], [0, 4 / 3], [2, 4 / 3], [0, 8 / 3], [2, 8 / 3], [1, 10 / 3], [0, 4], [2, 4]],
 };
+const PIP_X = [40, 60, 80];
+const PIP_Y0 = 40;
+const PIP_DY = (2 * (MID - PIP_Y0)) / 4;
 
-function Index({ rank, suit }: { rank: Rank; suit: Suit }) {
-  const text = rankLabel(rank);
+const NAME_FONT = 'var(--font-display)';
+
+/** Asterisco rosso in alto al centro, come su ogni carta del mazzo originale. */
+function Asterisk() {
+  return <path d="M60 4.6v6.4M57.2 6.2l5.6 3.2M62.8 6.2l-5.6 3.2" stroke={INK.red} strokeWidth="1.3" strokeLinecap="round" />;
+}
+
+/** Indice d'angolo: simbolo sopra, valore sotto. Grande, perché nel ventaglio si vede solo questo. */
+function Corner({ kind, rank, color }: { kind: PipKind; rank?: string; color: string }) {
+  const one = (x: number) => (
+    <g key={x}>
+      <Pip kind={kind} cx={x} cy={18.4} w={17.6} />
+      {rank && (
+        <text
+          className="card-rank"
+          x={x}
+          y={50}
+          textAnchor="middle"
+          fontSize={25}
+          textLength={rank.length > 1 ? 23 : undefined}
+          lengthAdjust="spacingAndGlyphs"
+          fill={color}
+        >
+          {rank}
+        </text>
+      )}
+    </g>
+  );
   return (
     <>
-      <text className="card-rank" x="9.5" y="18" textAnchor="middle" fontSize={text.length > 1 ? 15 : 19} textLength={text.length > 1 ? 13 : undefined} lengthAdjust="spacingAndGlyphs" style={{ fill: SUIT_COLOR[suit] }}>
-        {text}
-      </text>
-      <SuitGlyph suit={suit} x={2.5} y={21.5} size={14} />
+      {[14, 106].map(one)}
+      <g transform={`rotate(180 60 ${MID})`}>{[14, 106].map(one)}</g>
     </>
   );
 }
 
-/** Figura geometrica per J/Q/K: stessa maschera, copricapo diverso per rango. */
-function CourtFigure({ suit, rank }: { suit: Suit; rank: 11 | 12 | 13 }) {
-  const c = SUIT_COLOR[suit];
-  return (
-    <g>
-      {rank === 11 && (
-        <>
-          <path d="M21 34 V30 H39 V34 Z" fill={c} />
-          <path d="M30 30 Q25 22 30 14 Q35 22 30 30Z" fill={c} />
-        </>
-      )}
-      {rank === 12 &&
-        [-52, -26, 0, 26, 52].map((deg) => {
-          const a = (deg * Math.PI) / 180;
-          const x1 = 30 + 6 * Math.sin(a);
-          const y1 = 34 - 6 * Math.cos(a);
-          return <polygon key={deg} points={`${x1 - 2.6 * Math.cos(a)},${y1 - 2.6 * Math.sin(a)} ${30 + 19 * Math.sin(a)},${34 - 19 * Math.cos(a)} ${x1 + 2.6 * Math.cos(a)},${y1 + 2.6 * Math.sin(a)}`} fill={c} />;
-        })}
-      {rank === 13 && <path d="M21 34 V27 H24 V22 H27 V16 H33 V22 H36 V27 H39 V34 Z" fill={c} />}
-      <path d="M22 34 H38 V50 L34 56 H26 L22 50 Z" fill={c} />
-      <path d="M24.5 41 H28.5 M31.5 41 H35.5" stroke="var(--paper)" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M27 50 H33" stroke="var(--paper)" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="19.6" cy="45" r="2.3" fill={c} />
-      <circle cx="40.4" cy="45" r="2.3" fill={c} />
-      <SuitGlyph suit={suit} x={24.5} y={60} size={11} />
-    </g>
+/** Nome scritto in verticale lungo il bordo destro (e capovolto in basso a sinistra). */
+function SideName({ name, from = 58 }: { name: string; from?: number }) {
+  const one = (
+    <text transform={`translate(107.6 ${from}) rotate(90)`} fontFamily={NAME_FONT} fontSize="12.4" fill={INK.black}>
+      {name}
+    </text>
   );
-}
-
-function FretBands({ color }: { color: string }) {
-  return (
-    <g opacity="0.75">
-      <Fret x={21} y={5} w={18} color={color} />
-      <g transform="rotate(180 30 44)">
-        <Fret x={21} y={5} w={18} color={color} />
-      </g>
-    </g>
-  );
-}
-
-function SuitedFace({ suit, rank, size }: { suit: Suit; rank: Rank; size: Size }) {
-  const totem = suit === 'totem';
-  const court = rank >= 11;
-  const pips = size !== 'mini' && rank <= 10 ? PIPS[rank] : undefined;
   return (
     <>
-      <rect x="1" y="1" width="58" height="86" rx="6" fill={totem ? 'var(--paper-totem)' : 'var(--paper)'} stroke={totem ? 'var(--gold)' : 'var(--ink)'} strokeWidth="1.6" />
-      <rect x="3.6" y="3.6" width="52.8" height="80.8" rx="4" fill="none" stroke={totem ? 'var(--gold)' : SUIT_COLOR[suit]} strokeWidth={totem ? 1.4 : 0.7} opacity={totem ? 1 : 0.6} />
-      {totem && <rect x="6" y="6" width="48" height="76" rx="3" fill="none" stroke="var(--suit-totem)" strokeWidth="0.7" strokeDasharray="2 1.6" />}
-      <FretBands color={totem ? 'var(--gold)' : SUIT_COLOR[suit]} />
-      <Index rank={rank} suit={suit} />
-      <g transform="rotate(180 30 44)">
-        <Index rank={rank} suit={suit} />
-      </g>
-      {pips ? (
-        pips.map(([c, r], i) => <SuitGlyph key={i} suit={suit} x={23 + c * 7 - 6} y={18 + r * 13 - 6} size={rank >= 9 ? 11 : 12} />)
-      ) : (
-        <>
-          {rank === 14 && <circle cx="30" cy="44" r="19" fill="none" stroke={SUIT_COLOR[suit]} strokeWidth="1.2" strokeDasharray="2.5 2" opacity="0.7" />}
-          {court && rank < 14 ? <CourtFigure suit={suit} rank={rank as 11 | 12 | 13} /> : <SuitGlyph suit={suit} x={15} y={29} size={30} />}
-        </>
-      )}
+      {one}
+      <g transform={`rotate(180 60 ${MID})`}>{one}</g>
     </>
   );
 }
 
-export function Card({ card, label = null, disabled = false, dimmed = false, selected = false, onClick, size = 'trick', interactive = true }: CardProps) {
+function Paper() {
+  return <rect x="0.8" y="0.8" width={CARD_W - 1.6} height={CARD_H - 1.6} rx="8" fill={INK.paper} stroke="#c9c4b4" strokeWidth="1.2" />;
+}
+
+function AceTotem() {
+  return (
+    <g stroke={INK.black} strokeWidth="2" strokeLinejoin="round">
+      <path d="M33 70V58H39V52H48V47H72V52H81V58H87V70Z" fill={INK.yellow} />
+      {[42, 50, 58, 66, 74].map((x) => <rect key={x} x={x} y={56} width="4" height="10" rx="1.6" fill={INK.black} stroke="none" />)}
+      <path d="M36 70H84V110C84 124 73 134 60 134S36 124 36 110Z" fill={INK.yellow} />
+      <path d="M43 86Q49 81 55 86 49 90 43 86ZM65 86Q71 81 77 86 71 90 65 86Z" fill={INK.paper} />
+      <path d="M60 89 55 106H65Z" fill={INK.black} />
+      <path d="M48 116Q60 111 72 116 60 123 48 116Z" fill={INK.paper} />
+      <path d="M38 128Q60 140 82 128L80 136Q60 146 40 136Z" fill={INK.black} />
+    </g>
+  );
+}
+
+function SuitedFace({ suit, rank }: { suit: Suit; rank: Rank }) {
+  const color = SUIT_INK[suit];
+  const court = rank >= 11 && rank <= 13 ? FIGURES[suit][rank as 11 | 12 | 13] : null;
+  return (
+    <>
+      <Paper />
+      <Asterisk />
+      <Corner kind={suit} rank={rankLabel(rank)} color={color} />
+      {court && (
+        <>
+          <CourtFigure spec={court} />
+          <SideName name={court.name} />
+        </>
+      )}
+      {rank === 14 && (suit === 'totem' ? <AceTotem /> : <Pip kind={suit} cx={60} cy={MID} w={suit === 'cuori' ? 54 : 58} />)}
+      {rank <= 10 && PIPS[rank]!.map(([c, r], i) => <Pip key={i} kind={suit} cx={PIP_X[c]!} cy={PIP_Y0 + r * PIP_DY} w={rank >= 9 ? 18.5 : 21} flip={r > 2} />)}
+    </>
+  );
+}
+
+const GOD_TITLE = { rosso: 'dio rosso', nero: 'dio nero', taotl: 'taotl' } as const;
+const GOD_NAME = { rosso: 'quetzalcoatl', nero: 'tezcatlipoca', taotl: 'huitzilopochtli' } as const;
+
+function MagicFace({ card }: { card: Extract<CardT, { kind: 'god' } | { kind: 'chipetl' }> }) {
+  const god = card.kind === 'god' ? card.god : null;
+  const title = god ? (
+    <text x="60" y="24" textAnchor="middle" fontFamily={NAME_FONT} fontSize="13.4" fill={INK.black} stroke={INK.paper} strokeWidth="3.2" paintOrder="stroke" strokeLinejoin="round">
+      {GOD_TITLE[god]}
+    </text>
+  ) : null;
+  return (
+    <>
+      <Paper />
+      <Asterisk />
+      <Corner kind={god ?? 'chipetl'} color={INK.black} />
+      {god ? <GodArt god={god} /> : <ChipetlArt />}
+      {title}
+      {title && <g transform={`rotate(180 60 ${MID})`}>{title}</g>}
+      <SideName name={god ? GOD_NAME[god] : 'chipetl'} from={god ? 40 : 46} />
+    </>
+  );
+}
+
+export function Card({ card, label = null, disabled = false, dimmed = false, selected = false, onClick, size = 'trick', interactive = true, className = '' }: CardProps) {
+  const art = (
+    <svg className="card-art" viewBox={`0 0 ${CARD_W} ${CARD_H}`} aria-hidden="true" focusable="false">
+      {!card && <BackArt />}
+      {card?.kind === 'suited' && <SuitedFace suit={card.suit} rank={card.rank} />}
+      {card && card.kind !== 'suited' && <MagicFace card={card} />}
+    </svg>
+  );
+  if (!card) {
+    return (
+      <span data-testid="card-back" role="img" aria-label="Carta coperta" className={`card card-${size} card-back static ${className}`}>
+        {art}
+      </span>
+    );
+  }
   const suit = card.kind === 'suited' ? card.suit : card.kind;
   const face = (
     <>
-      <svg className="card-art" viewBox="0 0 60 88" aria-hidden="true" focusable="false">
-        {card.kind === 'suited' && <SuitedFace suit={card.suit} rank={card.rank} size={size} />}
-        {card.kind === 'god' && <GodFace god={card.god} />}
-        {card.kind === 'chipetl' && <ChipetlFace n={card.n} />}
-      </svg>
+      {art}
       {label && <span className="card-overlay">{label}</span>}
     </>
   );
@@ -126,10 +175,10 @@ export function Card({ card, label = null, disabled = false, dimmed = false, sel
       <span
         data-testid="card"
         data-card-id={cardId(card)}
-        aria-label={cardLabel(card)}
+        aria-label={cardLabel(card) + (label ? ` (${label})` : '')}
         aria-disabled="true"
         role="img"
-        className={`card card-${size} suit-${suit} static`}
+        className={`card card-${size} suit-${suit} static ${className}`}
       >
         {face}
       </span>
@@ -143,7 +192,7 @@ export function Card({ card, label = null, disabled = false, dimmed = false, sel
       aria-label={cardLabel(card)}
       aria-disabled={disabled ? 'true' : 'false'}
       aria-pressed={selected ? 'true' : 'false'}
-      className={`card card-${size} suit-${suit}${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}${dimmed ? ' dimmed' : ''}`}
+      className={`card card-${size} suit-${suit}${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}${dimmed ? ' dimmed' : ''} ${className}`}
       onClick={disabled ? undefined : onClick}
     >
       {face}

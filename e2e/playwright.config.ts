@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:3100',
-    viewport: { width: 360, height: 740 },
+    viewport: { width: 844, height: 390 },
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: {

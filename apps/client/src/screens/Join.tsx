@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { GodFan } from '../components/GodFan';
 import { errorMessage } from '../lib/errors';
 
 export function Join({ error, onJoin }: { error: string | null; onJoin: (nickname: string) => Promise<void> }) {
@@ -11,15 +12,28 @@ export function Join({ error, onJoin }: { error: string | null; onJoin: (nicknam
   };
   return (
     <main className="screen">
-      <h1>Entra nella stanza</h1>
-      <label>
-        Nickname
-        <input data-testid="input-nickname" value={nickname} maxLength={16} onChange={(e) => setNickname(e.target.value)} />
-      </label>
-      <button data-testid="btn-join" disabled={busy} onClick={submit}>
-        Entra
-      </button>
-      {error && <p role="alert">{errorMessage(error)}</p>}
+      <div className="hero">
+        <GodFan />
+        <p className="hero-title">Il Taotl</p>
+      </div>
+      <form
+        className="sheet"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
+        }}
+      >
+        <h1>Entra nella stanza</h1>
+        <p className="lede">Scegli il nome che vedranno gli altri al tavolo.</p>
+        <label>
+          Il tuo nickname
+          <input data-testid="input-nickname" value={nickname} maxLength={16} autoComplete="nickname" onChange={(e) => setNickname(e.target.value)} />
+        </label>
+        <button type="submit" data-testid="btn-join" disabled={busy}>
+          Entra
+        </button>
+        {error && <p role="alert">{errorMessage(error)}</p>}
+      </form>
     </main>
   );
 }

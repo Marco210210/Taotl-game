@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { GodFan } from '../components/GodFan';
 import { getSocket, request, setToken } from '../net/socket';
 import { errorMessage } from '../lib/errors';
 
@@ -16,15 +17,28 @@ export function Home({ navigate }: { navigate: (path: string) => void }) {
   };
   return (
     <main className="screen">
-      <h1>Il Taotl</h1>
-      <label>
-        Nickname
-        <input data-testid="input-nickname" value={nickname} maxLength={16} onChange={(e) => setNickname(e.target.value)} />
-      </label>
-      <button data-testid="btn-create" disabled={busy} onClick={create}>
-        Crea stanza
-      </button>
-      {error && <p role="alert">{errorMessage(error)}</p>}
+      <div className="hero">
+        <GodFan />
+        <h1 className="hero-title">Il Taotl</h1>
+      </div>
+      <form
+        className="sheet"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void create();
+        }}
+      >
+        <h2>Apri un tavolo</h2>
+        <p className="lede">Crea una stanza e manda il link agli amici: da 2 a 12 giocatori, bot compresi.</p>
+        <label>
+          Il tuo nickname
+          <input data-testid="input-nickname" value={nickname} maxLength={16} autoComplete="nickname" onChange={(e) => setNickname(e.target.value)} />
+        </label>
+        <button type="submit" data-testid="btn-create" disabled={busy}>
+          Crea stanza
+        </button>
+        {error && <p role="alert">{errorMessage(error)}</p>}
+      </form>
     </main>
   );
 }

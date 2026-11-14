@@ -241,24 +241,50 @@ Quando si sbaglia, il premio per il rispetto non si conta.
   - la **presa in corso** (carte giocate con autore);
   - **`tricksThisHand`**: tutte le prese **completate** della mano corrente, in ordine. Per ognuna: le carte giocate (con autore, ordine di gioco ed eventuale etichetta "Chipetl"/"Nullo" dei Dei) e il vincitore. È informazione **pubblica**: ce l'hanno tutte le viste, umani e bot. Si azzera a ogni nuova mano;
   - mazziere, mano corrente, turno, punteggi, host.
-- Nell'interfaccia umana resta solo il pulsante **"ultima presa"** (l'ultimo elemento di `tricksThisHand`). Lo storico completo serve al bot. Chi ispeziona il traffico di rete può vederlo: è accettato, perché è informazione pubblica.
+- Nell'interfaccia umana `tricksThisHand` non si mostra (niente "ultima presa", §7.4): serve al bot. Chi ispeziona il traffico di rete può vederlo: è accettato, perché è informazione pubblica.
 - **Mai** nelle viste: mani altrui, carte avanzate, ordine del mazzo, seme del generatore casuale.
 - Un **Dio giocato** si mostra sempre col suo vero volto, con l'etichetta **"Chipetl"** (se dichiarato) o **"Nullo"** (se nullo d'ufficio).
 - Test obbligatorio: per ogni stato di esempio, la vista di un giocatore non contiene nessuna carta delle mani altrui né delle carte avanzate.
 
 ### 7.4 Interfaccia (punti decisi)
-- Lingua **italiana**, pensata **prima per il telefono**.
-- **Etichette delle figure**: anche nell'interfaccia **J, Q, K, A** (nel codice `Rank` 11, 12, 13, 14). I numeri da 2 a 10 si mostrano così come sono.
-- **Giocare una carta**: un tocco la seleziona, un secondo tocco (o il pulsante "Gioca") la gioca.
-- Le carte **non giocabili** (obbligo di colore, §5.4) sono oscurate e non toccabili.
-- Quando si gioca un Dio in una situazione di **scelta** (§5.3), compaiono i pulsanti **"Valido"** / **"Chipetl"**, senza valore predefinito; si può annullare prima di scegliere.
-- Quando il Dio è nullo d'ufficio, nessuna domanda: parte con l'etichetta "Nullo".
-- Dichiarazione: si mostrano solo i valori leciti (al mazziere manca quello vietato).
-- Una presa completata resta visibile **~2 secondi**, poi chi l'ha vinta apre la successiva.
-- Mani grandi (fino a 36 carte): carte sovrapposte a ventaglio o scorribili, **ordinate per colore**.
-- Riepilogo a fine mano: dichiarate, fatte, punti della mano, totale.
+Restyling del 2026-11-14: carte nello stile del mazzo originale, tavolo orizzontale stile poker.
+
+**Generale**
+- Lingua **italiana**. Il gioco è pensato **in orizzontale**: tutte le schermate (home, ingresso, lobby, tavolo, riepilogo, classifica) hanno un layout orizzontale. Riferimenti: **844×390** (telefono in orizzontale) e **1440×900** (desktop).
+- **In verticale** (orientamento verticale e larghezza ≤ 900px) qualsiasi schermata è coperta da un avviso **"Ruota il telefono"**; lo stato della partita resta intatto sotto. Fa eccezione solo la pagina di sviluppo `/dev/cards`.
+- **Etichette delle figure**: J, Q, K, A (nel codice `Rank` 11, 12, 13, 14). I numeri da 2 a 10 si mostrano così come sono.
 - **Niente chat** nell'MVP.
-- **Grafica delle carte originale** in SVG/CSS (stile ispirato al Messico antico, senza copiare grafiche esistenti). Ogni colore ha simbolo e colore ben distinti, leggibili su schermi piccoli. Un componente `<Card>` unico permette di sostituirle in futuro con immagini reali.
+
+**Carte** (riferimento di stile: foto in `docs/carte-originali/`)
+- Disegni **originali** in SVG che richiamano chiaramente lo stile del mazzo originale, senza ricalcarne le illustrazioni: carta bianca a spigoli arrotondati, asterisco rosso in alto al centro, indici negli angoli (seme sopra, valore sotto), metà inferiore capovolta.
+- **Semi e inchiostri come nell'originale**: Cuori (cuore allungato) e Quadri (rombo) in **rosso**; Fiori (trifoglio) e Picche (punta di lancia) in **nero**; Totem (maschera) in **giallo con contorno nero**. Le carte numerate hanno i simboli disposti come nelle carte classiche, quelli della metà bassa capovolti; l'Asso ha un unico simbolo grande.
+- **Figure J/Q/K a doppia testa**, con il **nome scritto in verticale** lungo il bordo come nell'originale:
+  - Cuori/Quadri: personaggi aztechi, rosso-verde-nero. Quadri: K ahuitzotl, Q tlilalcapatl, J itztli. Cuori: K moctezuma, Q ixtaccihuatl, J toxcatl.
+  - Fiori/Picche: personaggi spagnoli, nero-giallo-rosso. Fiori: K carlos, Q isabella, J bernal. Picche: K hernan, Q marina, J alvarado.
+  - Totem: divinità, giallo-nero-rosso. K tlaltecuhtli, Q tonantzin, J xochipilli.
+- **Dei**: Dio Rosso = quetzalcoatl (rosso-verde), Dio Nero = tezcatlipoca (giallo-nero), Taotl = huitzilopochtli (rosso-giallo-verde); in alto e in basso la scritta "dio rosso" / "dio nero" / "taotl"; negli angoli un fiocco di piume nei colori del Dio.
+- **Chipetl**: teschio verde con corona di fiori rossi e gialli, scritta "chipetl", teschietti negli angoli. I 4 Chipetl sono identici.
+- **Retro**: fondo verde chiaro con serpenti stilizzati a linea bianca, simmetrico nei quattro quarti.
+- Tutte le carte (fronte e retro) passano da un **unico componente `<Card>`**; restano leggibili su schermi piccoli (indice grande nell'angolo in alto a sinistra, l'unico visibile nel ventaglio della mano). Pagina di sviluppo `/dev/cards` con tutte le carte, il retro e gli stati.
+
+**Tavolo**
+- **Tavolo ovale** visto dall'alto, giocatori seduti intorno **nell'ordine dei posti**, in senso orario. **Io sono sempre in basso al centro**, con la mia mano sotto il tavolo, a ventaglio sovrapposto, **ordinata per colore** (scorribile solo se non entra).
+- La disposizione dei posti si adatta al numero di giocatori, **da 2 a 12**, senza sovrapposizioni.
+- Ogni posto mostra: **nickname**, **dichiarate/fatte**, **punteggio totale**, **numero di carte in mano**, **stato di connessione** e **badge bot** (anche "bot al suo posto").
+- Indicatori: **segnalino del mazziere** sul posto del mazziere; **evidenziazione animata** di chi deve giocare o dichiarare; **asterisco rosso** su chi ha aperto la presa in corso.
+- In alto a sinistra: numero della mano e "Dichiarate X / N".
+- Le carte della **presa in corso** compaiono al centro del tavolo, **davanti a chi le ha giocate**. A presa completata restano visibili ~2 secondi con il vincitore evidenziato, poi **scivolano verso il vincitore** con un'animazione breve. Chi preferisce meno movimento (`prefers-reduced-motion`) non vede animazioni.
+- **Giocare una carta**: un tocco la seleziona (si alza), un secondo tocco o il pulsante **"Gioca"** la gioca.
+- Le carte **non giocabili** (obbligo di colore, §5.4) sono oscurate e non toccabili.
+- **Dichiarazione**: un pannello al centro del tavolo con i soli valori leciti (al mazziere manca quello vietato).
+- **Dio in situazione di scelta** (§5.3): pannello con **"Valido"** / **"Chipetl"**, senza valore predefinito; si può annullare prima di scegliere. Se il Dio è nullo d'ufficio, nessuna domanda: parte con l'etichetta "Nullo".
+- **Niente "ultima presa"** nell'interfaccia: non c'è né pulsante né vista. `tricksThisHand` resta nella vista del server perché serve al bot.
+- **Riepilogo a fine mano** sopra il tavolo: dichiarate, fatte, punti della mano, totale.
+
+**Estetica**
+- Un tavolo da gioco curato e coerente con le carte: sala in legno scuro, panno verde, bordo nero con fascia bianca a greca rossa, targhette dei posti in cartoncino bianco con inchiostro nero.
+- Palette degli inchiostri delle carte: rosso, verde, nero, giallo su bianco; il giallo segnala il turno.
+- Caratteri: **Grenze Gotisch** (titoli, nomi sulle carte, valori) e **Grenze** (testo), da Google Fonts con ripiego serif di sistema.
 
 ---
 

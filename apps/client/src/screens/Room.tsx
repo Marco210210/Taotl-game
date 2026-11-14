@@ -8,20 +8,26 @@ import { Table } from './Table';
 
 function Failure({ error }: { error: string }) {
   return (
-    <main className="screen">
-      <p role="alert">{errorMessage(error)}</p>
-      <Link to="/">Torna alla home</Link>
+    <main className="screen single">
+      <section className="sheet">
+        <h1>Il Taotl</h1>
+        <p role="alert">{errorMessage(error)}</p>
+        <Link to="/">Torna alla home</Link>
+      </section>
     </main>
   );
 }
 
 export function TakenOver({ onResume }: { onResume: () => void }) {
   return (
-    <main className="screen">
-      <p role="alert" data-testid="taken-over">Sei connesso da un'altra scheda</p>
-      <button type="button" data-testid="btn-resume" onClick={onResume}>
-        Riprendi qui
-      </button>
+    <main className="screen single">
+      <section className="sheet">
+        <h1>Il Taotl</h1>
+        <p role="alert" data-testid="taken-over">Sei connesso da un'altra scheda</p>
+        <button type="button" data-testid="btn-resume" onClick={onResume}>
+          Riprendi qui
+        </button>
+      </section>
     </main>
   );
 }
@@ -34,8 +40,8 @@ export function Room({ code }: { code: string }) {
   if (error && !view) return <Failure error={error} />;
   if (!view) {
     return (
-      <main className="screen">
-        <p>Connessione…</p>
+      <main className="screen single">
+        <p className="table-note">Connessione…</p>
       </main>
     );
   }

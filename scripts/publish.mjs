@@ -16,7 +16,7 @@ const STAGING = 'progetti/.Taotl-game-upload'; // cartella temporanea remota
 const EXCLUDE = [
   'node_modules', 'dist', 'build', '.git', '.claude',
   '.playwright-mcp', '.superpowers', 'test-results', 'playwright-report',
-  'taotl.zip', '.mcp.json', 'skills-lock.json',
+  'taotl.zip', '.mcp.json', 'skills-lock.json', 'carte-originali',
 ];
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');

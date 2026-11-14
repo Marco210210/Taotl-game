@@ -100,7 +100,7 @@ describe('Table: fix 4.2', () => {
     });
   it('le carte della presa non sono bottoni', () => {
     render(<Table view={view(playing())} emit={vi.fn()} />);
-    const trick = document.querySelector('.trick-area [data-testid="card"]') as HTMLElement;
+    const trick = document.querySelector('[data-testid="trick"] [data-testid="card"]') as HTMLElement;
     expect(trick.tagName).not.toBe('BUTTON');
     expect(trick).not.toHaveAttribute('aria-pressed');
     expect(trick).toHaveAttribute('aria-disabled', 'true');
@@ -117,8 +117,35 @@ describe('Table: fix 4.2', () => {
     rerender(<Table view={view(playing({ turnId: 'b' }))} emit={emit} />);
     expect(screen.queryByRole('alert')).toBeNull();
   });
-  it('PlayersBar ha figure esplicite', () => {
+  it('ogni posto mostra dichiarate, fatte, carte in mano e punteggio', () => {
     render(<Table view={view(playing())} emit={vi.fn()} />);
-    expect(screen.getByText('dich. 1 · fatte 1 · carte 0 · tot 25', { exact: false })).toBeInTheDocument();
+    const a = within(screen.getByTestId('seat-a'));
+    expect(a.getByTestId('stat-bid')).toHaveTextContent('1');
+    expect(a.getByTestId('stat-made')).toHaveTextContent('1');
+    expect(a.getByTestId('stat-cards')).toHaveTextContent('0');
+    expect(a.getByTestId('stat-total')).toHaveTextContent('25');
+  });
+  it('mazziere, turno e apertura della presa segnati sui posti', () => {
+    render(<Table view={view(playing())} emit={vi.fn()} />);
+    expect(within(screen.getByTestId('seat-c')).getByTestId('dealer-chip')).toBeInTheDocument();
+    expect(screen.getByTestId('seat-a')).toHaveAttribute('data-turn', 'true');
+    expect(screen.getByTestId('seat-b')).toHaveAttribute('data-turn', 'false');
+    expect(within(screen.getByTestId('seat-b')).getByTestId('leader-mark')).toBeInTheDocument();
+    expect(within(screen.getByTestId('seat-a')).queryByTestId('leader-mark')).toBeNull();
+  });
+  it('bot e disconnessi hanno il loro badge', () => {
+    const v = view(playing());
+    v.seats = [seat('a'), { ...seat('b'), isBot: true }, { ...seat('c'), connected: false }];
+    render(<Table view={v} emit={vi.fn()} />);
+    expect(within(screen.getByTestId('seat-b')).getByTestId('badge-bot')).toBeInTheDocument();
+    expect(within(screen.getByTestId('seat-c')).getByTestId('badge-offline')).toBeInTheDocument();
+    expect(within(screen.getByTestId('seat-a')).queryByTestId('badge-offline')).toBeNull();
+  });
+  it('niente ultima presa nell interfaccia', () => {
+    const g = playing({ tricksThisHand: [{ winnerId: 'b', cards: [{ playerId: 'b', card: { kind: 'suited', suit: 'fiori', rank: 2 }, valid: true, label: null }] }] });
+    render(<Table view={view(g)} emit={vi.fn()} />);
+    expect(screen.queryByTestId('btn-last-trick')).toBeNull();
+    expect(screen.queryByText(/ultima presa/i)).toBeNull();
+    expect(document.querySelector('[data-card-id="fiori-2"]')).toBeNull();
   });
 });

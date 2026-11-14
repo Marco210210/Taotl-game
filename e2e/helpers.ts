@@ -2,6 +2,13 @@ import { expect, type Browser, type BrowserContext, type Page } from '@playwrigh
 
 const ACTION_TIMEOUT = 1500;
 
+/** Punto dell'indice d'angolo di una carta della mano: visibile anche quando le carte sono sovrapposte. */
+export const CARD_CORNER = { x: 7, y: 18 };
+
+/** Viewport di riferimento: telefono in orizzontale e desktop (SPEC §7.4). */
+export const PHONE = { width: 844, height: 390 };
+export const DESKTOP = { width: 1440, height: 900 };
+
 export type TurnKind = 'bid' | 'play' | 'none';
 
 /** Un'azione di UI: un elemento sparito/ri-renderizzato non fa fallire il test, il ciclo riprova. */
@@ -22,10 +29,10 @@ export async function playTurnViaUI(page: Page): Promise<TurnKind> {
   if (await page.getByTestId('my-turn').isVisible()) {
     const card = page.locator('[data-testid="hand"] [data-testid="card"][aria-disabled="false"]').first();
     if (!(await card.isVisible())) return 'none';
-    // primo click seleziona, secondo gioca
+    // primo click seleziona, secondo gioca; si tocca l'indice in alto a sinistra, sempre scoperto nel ventaglio
     const ok = await attempt(async () => {
-      await card.click({ timeout: ACTION_TIMEOUT });
-      await card.click({ timeout: ACTION_TIMEOUT });
+      await card.click({ timeout: ACTION_TIMEOUT, position: CARD_CORNER });
+      await card.click({ timeout: ACTION_TIMEOUT, position: CARD_CORNER });
     });
     const valido = page.getByTestId('btn-valido');
     if (await valido.isVisible()) await attempt(() => valido.click({ timeout: ACTION_TIMEOUT }));
@@ -61,8 +68,8 @@ export async function runUntil(
 
 export const isVisible = (page: Page, testId: string) => page.getByTestId(testId).isVisible();
 
-export async function newPlayer(browser: Browser): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await browser.newContext({ viewport: { width: 360, height: 740 } });
+export async function newPlayer(browser: Browser, viewport = PHONE): Promise<{ context: BrowserContext; page: Page }> {
+  const context = await browser.newContext({ viewport });
   return { context, page: await context.newPage() };
 }
 
