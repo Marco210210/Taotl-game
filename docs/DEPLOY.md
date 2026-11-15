@@ -1,6 +1,6 @@
 # Deploy del gioco online
 
-Il gioco è pubblicato su **https://gioco-taotl.130.110.16.97.sslip.io**, sul server Oracle
+Il gioco è pubblicato su **https://taotl-game.duckdns.org**, sul server Oracle
 (`ubuntu@130.110.16.97`, host SSH `oracle-server` in `~/.ssh/config`).
 
 ## Pubblicare un aggiornamento
@@ -48,7 +48,8 @@ Per lanciarlo a mano: `ssh oracle-server "bash ~/progetti/Taotl-game/deploy.sh"`
 | Node 26 + pnpm 12.18.0 | `~/.local/node-26` (isolato: il Node 22 di sistema serve agli altri servizi e **non va aggiornato**) |
 | Servizio | systemd **utente** `taotl-game.service` (`~/.config/systemd/user/`), utente `ubuntu`, `Restart=always`, avvio al boot grazie al linger attivo; stesso schema di `taotl-expo-go` |
 | Variabili d'ambiente | `~/.config/taotl-game.env` (permessi 600): `NODE_ENV=production`, `HOST=127.0.0.1`, `PORT=8140` |
-| Reverse proxy | Caddy: `/etc/caddy/gioco-taotl.Caddyfile`, incluso con `import` in fondo a `/etc/caddy/Caddyfile`. HTTPS automatico, WebSocket inoltrati da `reverse_proxy` |
+| Reverse proxy | Caddy: `/etc/caddy/gioco-taotl.Caddyfile`, incluso con `import` in fondo a `/etc/caddy/Caddyfile`. HTTPS automatico, WebSocket inoltrati da `reverse_proxy`. Il vecchio `gioco-taotl.130.110.16.97.sslip.io` rimanda (301) al nuovo indirizzo: i filtri antiphishing (es. TIM) bloccano `sslip.io` |
+| DNS | DuckDNS `taotl-game.duckdns.org` → 130.110.16.97 (IP fisso del server) |
 | Firewall | Nessuna modifica: iptables lascia passare solo 22/80/443 e il gioco ascolta solo su localhost |
 
 Variabili facoltative del server (vedi `apps/server/src/config.ts`): `BOT_MOVE_DELAY_MS`,
@@ -63,8 +64,8 @@ e `manifest.webmanifest` con `no-cache`, `/assets/*` con un anno `immutable`. Ca
 senza modificarli. Per controllare dopo un deploy:
 
 ```sh
-curl -sI https://gioco-taotl.130.110.16.97.sslip.io/sw.js | grep -i cache-control      # no-cache
-curl -sI https://gioco-taotl.130.110.16.97.sslip.io/manifest.webmanifest | grep -i -e cache -e type
+curl -sI https://taotl-game.duckdns.org/sw.js | grep -i cache-control      # no-cache
+curl -sI https://taotl-game.duckdns.org/manifest.webmanifest | grep -i -e cache -e type
 ```
 
 Icone e screenshot del manifest stanno in `apps/client/public/`; si rigenerano con

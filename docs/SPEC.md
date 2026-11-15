@@ -248,7 +248,7 @@ Quando si sbaglia, il premio per il rispetto non si conta.
 - Test obbligatorio: per ogni stato di esempio, la vista di un giocatore non contiene nessuna carta delle mani altrui né delle carte avanzate.
 
 ### 7.4 Interfaccia (punti decisi)
-Restyling del 2026-11-14: carte nello stile del mazzo originale, tavolo orizzontale stile poker. Correzioni del 2026-11-14 (seconda serie): preselezione e giocata con un tocco, classifica sempre disponibile, tutto schermo, app installabile, niente selezione del testo.
+Restyling del 2026-11-14: carte nello stile del mazzo originale, tavolo orizzontale stile poker. Correzioni del 2026-11-14 (seconda serie): preselezione e giocata con un tocco, classifica sempre disponibile, tutto schermo, app installabile, niente selezione del testo. Correzione del 2026-11-15: la preselezione vale solo a presa aperta, solo sulle carte lecite, e al mio turno la carta parte da sola.
 
 **Generale**
 - Lingua **italiana**. Il gioco è pensato **in orizzontale**: tutte le schermate (home, ingresso, lobby, tavolo, riepilogo, classifica) hanno un layout orizzontale. Riferimenti: **844×390** (telefono in orizzontale) e **1440×900** (desktop).
@@ -294,7 +294,7 @@ Restyling del 2026-11-14: carte nello stile del mazzo originale, tavolo orizzont
 - In alto a sinistra: numero della mano e "Dichiarate X / N".
 - Le carte della **presa in corso** compaiono al centro del tavolo, **davanti a chi le ha giocate**. A presa completata restano visibili ~2 secondi con il vincitore evidenziato, poi **scivolano verso il vincitore** con un'animazione breve. Chi preferisce meno movimento (`prefers-reduced-motion`) non vede animazioni.
 - **Giocare una carta, quando è il mio turno**: **un solo tocco** su una carta giocabile la gioca subito, senza conferma né pulsante "Gioca". Unica eccezione la scelta Valido/Chipetl di un Dio (§5.3), che è una regola e non una conferma.
-- **Preselezione, quando non è il mio turno**: un tocco solleva una carta, un altro tocco la abbassa, toccarne un'altra sposta la selezione. Quando arriva il mio turno la carta **non si gioca da sola**: resta sollevata e un tocco la gioca. Se nel frattempo è diventata non giocabile (§5.4), si deseleziona da sola.
+- **Preselezione, quando non è il mio turno**: possibile **solo dopo che il primo di mano ha giocato** la carta della presa in corso, e finché non ho giocato io (prima non si sa che cosa sarà lecito; chi apre la presa non preseleziona). Da quel momento sono toccabili **solo le carte lecite** (§5.4), le altre sono oscurate subito. Un tocco solleva una carta, un altro la abbassa, toccarne un'altra sposta la selezione. **Quando arriva il mio turno la carta preselezionata si gioca da sola**, senza aspettare altri tocchi (se è un Dio in situazione di scelta compare comunque Valido/Chipetl, §5.3). Se nel frattempo è diventata non lecita (es. esce il colore della presa dopo un Chipetl o un Dio) si abbassa da sola.
 - Durante il mio turno le carte **non giocabili** (obbligo di colore, §5.4) sono oscurate e non toccabili. Niente timer di turno.
 - **Dichiarazione**: un pannello al centro del tavolo con i soli valori leciti (al mazziere manca quello vietato).
 - **Dio in situazione di scelta** (§5.3): pannello con **"Valido"** / **"Chipetl"**, senza valore predefinito; si può annullare prima di scegliere. Se il Dio è nullo d'ufficio, nessuna domanda: parte con l'etichetta "Nullo".

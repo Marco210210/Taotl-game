@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { CARD_CORNER, createRoom, isVisible, newPlayer, playTurnViaUI, readSummary, type SummaryRow } from './helpers';
+import { CARD_CORNER, createRoom, isVisible, joinRoom, newPlayer, playTurnViaUI, readSummary, type SummaryRow } from './helpers';
 
 const CARDS = '[data-testid="hand"] [data-testid="card"]';
 
@@ -13,65 +13,103 @@ async function startWithBots(page: Page, bots: number) {
   await expect(page.getByTestId('table')).toBeVisible();
 }
 
-const myPlayTurn = async (page: Page) =>
-  (await page.getByTestId('my-turn').isVisible()) && (await page.locator('[data-testid^="bid-"]').count()) === 0;
+/** Gioca una carta dalla UI, riprovando se un ri-render fa mancare il tocco. */
+async function playNow(page: Page) {
+  for (let i = 0; i < 40; i++) {
+    if ((await playTurnViaUI(page)) === 'play') return;
+    await page.waitForTimeout(50);
+  }
+  const st = await page.evaluate(() => ({
+    text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 400),
+    cards: [...document.querySelectorAll('[data-testid="hand"] [data-testid="card"]')].map((e) => e.getAttribute('aria-disabled') + (e.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(' '),
+  }));
+  throw new Error('carta non giocata: ' + JSON.stringify(st));
+}
 
-test('preselezione fuori turno: solleva, abbassa, sposta; al mio turno resta su e un tocco la gioca', async ({ browser }) => {
-  const a = await newPlayer(browser);
-  const page = a.page;
+// letto in un colpo solo nella pagina: due letture separate possono stare a cavallo di una dichiarazione
+const myPlayTurn = (page: Page) =>
+  page.evaluate(() => !!document.querySelector('[data-testid="my-turn"]') && !document.querySelector('[data-testid^="bid-"]') && !!document.querySelector('[data-testid="hand"][data-my-turn="true"]'));
+
+test('preselezione: solo dopo la carta del primo di mano, solo carte lecite, al mio turno parte da sola', async ({ browser }) => {
+  const players = [await newPlayer(browser), await newPlayer(browser), await newPlayer(browser)];
+  const pages = players.map((p) => p.page);
   try {
-    await startWithBots(page, 1);
-    await expect(page.locator(CARDS)).toHaveCount(36);
-    // fase di dichiarazione: non è il mio turno di gioco, le carte si possono preselezionare
-    const first = page.locator(CARDS).nth(0);
-    const second = page.locator(CARDS).nth(1);
-    await first.click({ position: CARD_CORNER });
-    await expect(first).toHaveAttribute('aria-pressed', 'true');
-    await first.click({ position: CARD_CORNER });
-    await expect(first).toHaveAttribute('aria-pressed', 'false');
-    await first.click({ position: CARD_CORNER });
-    await second.click({ position: CARD_CORNER });
-    await expect(first).toHaveAttribute('aria-pressed', 'false');
-    await expect(second).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator(CARDS)).toHaveCount(36);
+    const url = await createRoom(pages[0]!, 'Anna');
+    await joinRoom(pages[1]!, url, 'Bea');
+    await joinRoom(pages[2]!, url, 'Ciro');
+    await expect(pages[0]!.locator('[data-testid^="seat-"]')).toHaveCount(3);
+    await pages[0]!.getByTestId('btn-start').click();
+    for (const p of pages) await expect(p.getByTestId('table')).toBeVisible();
 
-    // si cerca un mio turno di gioco con una carta preselezionata giocabile
-    let checked = false;
-    for (let i = 0; i < 2000 && !checked; i++) {
-      if (await myPlayTurn(page)) {
-        const pressed = page.locator(`${CARDS}[aria-pressed="true"]`);
-        if ((await pressed.count()) === 1 && (await pressed.getAttribute('aria-disabled')) === 'false') {
-          // il turno è arrivato: la carta non si è giocata da sola
-          const id = await pressed.getAttribute('data-card-id');
-          const before = await page.locator(CARDS).count();
-          await page.waitForTimeout(300);
-          await expect(page.locator(CARDS)).toHaveCount(before);
-          await expect(page.locator(`${CARDS}[data-card-id="${id}"]`)).toHaveAttribute('aria-pressed', 'true');
-          await page.locator(`${CARDS}[data-card-id="${id}"]`).click({ position: CARD_CORNER });
-          // un Dio in situazione di scelta chiede Valido/Chipetl: è una regola, non una conferma
-          if (id!.startsWith('god-') && (await page.getByTestId('btn-valido').isVisible())) await page.getByTestId('btn-valido').click();
-          await expect(page.locator(CARDS)).toHaveCount(before - 1);
-          await expect(page.locator(`[data-testid="trick"] [data-card-id="${id}"]`)).toHaveCount(1);
-          checked = true;
-          break;
-        }
-        // nessuna carta preselezionata giocabile: le non giocabili si sono abbassate da sole
-        await expect(page.locator(`${CARDS}[aria-pressed="true"][aria-disabled="true"]`)).toHaveCount(0);
-        await playTurnViaUI(page);
-        continue;
+    // solo dichiarazioni (nessuna carta giocata), finché qualcuno deve aprire la prima presa
+    let leader: Page | undefined;
+    for (let i = 0; i < 400 && !leader; i++) {
+      for (const p of pages) {
+        const bid = p.locator('[data-testid^="bid-"]').first();
+        if (await bid.isVisible()) await bid.click({ timeout: 1500 }).catch(() => {});
       }
-      // fuori dal mio turno di gioco: dopo un'eventuale dichiarazione, preseleziona una carta
-      if ((await playTurnViaUI(page)) === 'none') {
-        const pressed = await page.locator(`${CARDS}[aria-pressed="true"]`).count();
-        if (pressed === 0 && !(await myPlayTurn(page))) {
-          await page.locator(CARDS).first().click({ position: CARD_CORNER, timeout: 1500 }).catch(() => {});
-        }
-        await page.waitForTimeout(30);
-      }
+      for (const p of pages) if (await myPlayTurn(p)) leader = p;
+      if (!leader) await pages[0]!.waitForTimeout(40);
     }
-    expect(checked, 'turno con carta preselezionata giocabile non osservato').toBe(true);
+    expect(leader, 'primo di mano non trovato').toBeTruthy();
+    const others = pages.filter((p) => p !== leader);
+
+    // prima che il primo di mano giochi: nessuna preselezione, nessuna carta oscurata
+    for (const p of others) {
+      await p.locator(CARDS).first().click({ position: CARD_CORNER });
+      await expect(p.locator(`${CARDS}[aria-pressed="true"]`)).toHaveCount(0);
+      await expect(p.locator(`${CARDS}.dimmed`)).toHaveCount(0);
+    }
+
+    // il primo di mano gioca; il secondo è di turno, il terzo può preselezionare
+    await playNow(leader!);
+    let second: Page | undefined;
+    await expect.poll(async () => {
+      for (const p of others) if (await myPlayTurn(p)) second = p;
+      return !!second;
+    }).toBe(true);
+    const third = others.find((p) => p !== second)!;
+    await expect(third.getByTestId('hand')).toHaveAttribute('data-preselect', 'true');
+    // le carte non lecite (obbligo di colore) sono oscurate e non si sollevano
+    const blocked = third.locator(`${CARDS}[aria-disabled="true"]`);
+    if ((await blocked.count()) > 0) {
+      await expect(blocked.first()).toHaveClass(/dimmed/);
+      await blocked.first().click({ position: CARD_CORNER, force: true });
+      await expect(third.locator(`${CARDS}[aria-pressed="true"]`)).toHaveCount(0);
+    }
+    // solleva, abbassa, sposta
+    const legal = third.locator(`${CARDS}[aria-disabled="false"]`);
+    const n = await legal.count();
+    expect(n).toBeGreaterThan(0);
+    await legal.nth(0).click({ position: CARD_CORNER });
+    await expect(legal.nth(0)).toHaveAttribute('aria-pressed', 'true');
+    await legal.nth(0).click({ position: CARD_CORNER });
+    await expect(legal.nth(0)).toHaveAttribute('aria-pressed', 'false');
+    if (n > 1) {
+      await legal.nth(0).click({ position: CARD_CORNER });
+      await legal.nth(1).click({ position: CARD_CORNER });
+      await expect(legal.nth(0)).toHaveAttribute('aria-pressed', 'false');
+    } else {
+      await legal.nth(0).click({ position: CARD_CORNER });
+    }
+    const chosen = third.locator(`${CARDS}[aria-pressed="true"]`);
+    await expect(chosen).toHaveCount(1);
+    const id = (await chosen.getAttribute('data-card-id'))!;
+    const before = await third.locator(CARDS).count();
+
+    // gioca il secondo: al turno del terzo la carta preselezionata parte da sola, senza altri tocchi
+    await playNow(second!);
+    const valido = third.getByTestId('btn-valido');
+    if (id.startsWith('god-')) {
+      // un Dio in situazione di scelta chiede comunque Valido/Chipetl (regola, non conferma)
+      await valido.waitFor({ timeout: 3000 }).catch(() => {});
+      if (await valido.isVisible()) await valido.click();
+    }
+    await expect(third.locator(CARDS)).toHaveCount(before - 1);
+    // proprio quella carta è uscita dalla mano (la presa, ora completa, sparisce subito dal tavolo)
+    await expect(third.locator(`${CARDS}[data-card-id="${id}"]`)).toHaveCount(0);
   } finally {
-    await a.context.close();
+    for (const p of players) await p.context.close();
   }
 });
 

@@ -31,8 +31,6 @@ Formato: **decisione** — perché — costo se sbagliata.
 
 ## Correzioni del 2026-11-14, seconda serie (SPEC §7.2, §7.4)
 - **Giocata con un tocco: sparisce il pulsante "Gioca"**; resta solo la scelta Valido/Chipetl dei Dei (§5.3) — richiesta esplicita — per tornare indietro basta ripristinare la doppia conferma in `Hand.tsx`.
-- **Preselezione anche durante la dichiarazione e la pausa di fine presa** (qualsiasi momento che non sia il mio turno di gioco) — è "fuori turno" per il giocatore — nessun costo, la carta non parte mai da sola.
-- **Fuori turno tutte le carte sono toccabili e non oscurate**: il server manda le carte giocabili solo nel mio turno, quindi l'obbligo di colore si applica (e deseleziona) quando il turno arriva.
 - **Riepilogo e classifica usano lo stesso ordinamento** (`lib/standings.ts`): totale decrescente, a parità ordine dei posti dal mazziere; nel riepilogo è il mazziere della mano appena finita, che è ancora quello della vista.
 - **I totali della classifica sono la somma di `handScores`**, non `total`, così per costruzione non entrano mai punti della mano in corso.
 - **Posizione in classifica a pari merito**: stesso numero, mostrato solo sulla prima riga del gruppo.
@@ -51,3 +49,9 @@ Formato: **decisione** — perché — costo se sbagliata.
 - **Link della stanza solo nei pulsanti "Copia link" e "Condividi"**: il link non si vede più come testo; il codice grande resta per dettarlo a voce. Se la copia fallisce compare un messaggio che invita a mandare il codice.
 - **Menu contestuale e trascinamento bloccati su tutta l'app** (non solo carte e tavolo), tranne nei campi di input — comportamento da app coerente su ogni schermata.
 - **Lighthouse 11.7.1 per il controllo PWA** — dalla versione 12 Lighthouse non ha più la categoria PWA.
+
+## Correzione del 2026-11-15 (SPEC §7.4, DEPLOY)
+- **Preselezione solo a presa aperta e solo sulle carte lecite; al mio turno la carta parte da sola** — richiesta esplicita, sostituisce la regola del 2026-11-14 (preselezione in qualsiasi momento fuori turno, carta che non partiva da sola).
+- **Le carte lecite per la preselezione le calcola il client** con `legalCards` del motore sulla mia mano e sul seme della presa in corso (già nella vista); il server continua a validare la giocata, quindi un errore del client al massimo fa rifiutare la carta.
+- **Chi apre la presa non preseleziona, nemmeno durante la dichiarazione o la pausa di fine presa**: la carta di apertura è una scelta libera, e senza la carta del primo di mano non si sa che cosa sarà lecito.
+- **Nuovo indirizzo `taotl-game.duckdns.org`**: il filtro antiphishing di TIM bloccava i sottodomini di `sslip.io` (usati spesso per siti malevoli); il vecchio indirizzo rimanda al nuovo con un 301. Un dominio vero si sceglierà insieme al nome definitivo.

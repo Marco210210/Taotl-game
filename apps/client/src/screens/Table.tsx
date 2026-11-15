@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { cardId, godPlayStatus, trickSuit, type Card as CardT, type CardId, type Intent } from '@taotl/engine';
+import { cardId, godPlayStatus, legalCards, trickSuit, type Card as CardT, type CardId, type Intent } from '@taotl/engine';
 import type { RoomView } from '@taotl/protocol';
 import { BidPanel } from '../components/BidPanel';
 import { GodChoice } from '../components/GodChoice';
@@ -85,6 +85,10 @@ export function Table({ view, emit, connected = true }: { view: RoomView; emit: 
   const active = game.phase === 'bidding' || game.phase === 'playing';
   const myTurn = game.turnId === view.me && active && !view.pause;
   const playable = new Set<CardId>(myTurn ? game.playableCardIds : []);
+  // preselezione (SPEC §7.4): solo a presa aperta dal primo di mano e finché non ho giocato io
+  const canPreselect =
+    game.phase === 'playing' && !myTurn && !view.pause && game.currentTrick.length > 0 && !game.currentTrick.some((p) => p.playerId === view.me);
+  const preselectable = new Set<CardId>(canPreselect ? legalCards(game.hand, game.trickSuit).map(cardId) : []);
   const nick = (id: string | null | undefined) => view.seats.find((s) => s.id === id)?.nickname ?? '';
   const choosingCard: CardT | undefined = choosing ? game.hand.find((c) => cardId(c) === choosing) : undefined;
 
@@ -169,7 +173,7 @@ export function Table({ view, emit, connected = true }: { view: RoomView; emit: 
         </div>
       </div>
       <div className="dock">
-        <Hand cards={game.hand} playable={playable} onPlay={onPlay} myTurn={myTurn && game.phase === 'playing'} />
+        <Hand cards={game.hand} playable={playable} preselectable={preselectable} onPlay={onPlay} myTurn={myTurn && game.phase === 'playing'} />
         {error && (
           <p role="alert" className="table-error">
             {errorMessage(error)}
