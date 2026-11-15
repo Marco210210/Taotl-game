@@ -14,21 +14,35 @@ const view = (pause: RoomView['pause']): RoomView => ({
 describe('PauseDialog: Aspetta', () => {
   it('dopo Aspetta nasconde le scelte e mostra feedback; torna a mostrarle se la pausa cambia', async () => {
     const emit = vi.fn().mockResolvedValue({ ok: true });
-    const { rerender } = render(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: true })} emit={emit} />);
+    const { rerender } = render(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: true, autoBotInMs: null })} emit={emit} />);
     await userEvent.click(screen.getByTestId('btn-pause-wait'));
     expect(emit).toHaveBeenCalledWith('host:decision', { choice: 'wait' });
     expect(screen.getByText('Ok, aspettiamo')).toBeInTheDocument();
     expect(screen.queryByTestId('btn-pause-bot')).toBeNull();
-    rerender(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: false })} emit={emit} />);
+    rerender(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: false, autoBotInMs: null })} emit={emit} />);
     expect(screen.queryByText('Ok, aspettiamo')).toBeNull();
-    rerender(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: true })} emit={emit} />);
+    rerender(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: true, autoBotInMs: null })} emit={emit} />);
     expect(screen.getByTestId('btn-pause-bot')).toBeInTheDocument();
   });
   it('se Aspetta fallisce le scelte restano', async () => {
     const emit = vi.fn().mockResolvedValue({ ok: false, error: 'no-pause' });
-    render(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: true })} emit={emit} />);
+    render(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: true, autoBotInMs: null })} emit={emit} />);
     await userEvent.click(screen.getByTestId('btn-pause-wait'));
     expect(screen.getByTestId('btn-pause-bot')).toBeInTheDocument();
+  });
+});
+
+describe('PauseDialog: bot al posto di chi manca', () => {
+  it('il pulsante dice chiaramente che giocherà un bot; conto alla rovescia del bot automatico', () => {
+    render(<PauseDialog view={view({ waitingFor: 'b', hostCanDecide: true, autoBotInMs: 45_000 })} emit={vi.fn()} />);
+    expect(screen.getByTestId('btn-pause-bot')).toHaveTextContent('Fai giocare un bot al suo posto');
+    expect(screen.getByTestId('pause-auto-bot')).toHaveTextContent('Se non scegli, tra 45 s gioca un bot al posto di B');
+  });
+  it("chi non è host vede l'avviso ma non le scelte", () => {
+    const v = { ...view({ waitingFor: 'b', hostCanDecide: true, autoBotInMs: 30_000 }), me: 'c', seats: [seat('a'), seat('b'), seat('c')] };
+    render(<PauseDialog view={v} emit={vi.fn()} />);
+    expect(screen.queryByTestId('btn-pause-bot')).toBeNull();
+    expect(screen.getByTestId('pause-auto-bot')).toHaveTextContent("Se l'host non sceglie, tra 30 s");
   });
 });
 

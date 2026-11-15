@@ -32,10 +32,12 @@ describe('config', () => {
       botMoveDelayMs: 800,
       trickPauseMs: 2000,
       disconnectGraceMs: 120000,
+      autoBotMs: 60000,
       roomIdleMs: 1800000,
     });
     expect(loadConfig({ PORT: '4000', ROOM_IDLE_MS: '5' }).port).toBe(4000);
     expect(loadConfig({ PORT: 'x' }).port).toBe(3000);
+    expect(loadConfig({ AUTO_BOT_MS: '5000' }).autoBotMs).toBe(5000);
   });
 });
 

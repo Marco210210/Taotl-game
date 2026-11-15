@@ -6,7 +6,7 @@ Formato: **decisione** — perché — costo se sbagliata.
 - **Notazione di test per il Totem senza spazi** (`'JT'`, non `'J T'` come in un esempio del Task 1.4) — coerente con `c('7T')`/`c('AT')` del Task 1.2 — nessun costo, riguarda solo i test.
 - **Il bot tiene conto delle dichiarazioni già fatte** arrotondando per difetto la stima quando la somma delle dichiarazioni precedenti è già ≥ N — lettura più semplice di SPEC §8 — costo se sbagliata: dichiarazioni del bot leggermente diverse.
 - **Errori extra del protocollo: `bad-player` (kick di sé/sconosciuto) e `bad-order` (reorder non permutazione); token espulso ha precedenza su `game-started`** — il brief non li elenca — basta rinominare il codice
-- **La rivincita mantiene il controllo del bot per i giocatori ancora disconnessi** (azzera botControlled solo per chi è connesso) — evita che la nuova partita vada subito in pausa — costo se sbagliata: l'host dovrà riscegliere 'Gioca al suo posto'.
+- **La rivincita mantiene il controllo del bot per i giocatori ancora disconnessi** (azzera botControlled solo per chi è connesso) — evita che la nuova partita vada subito in pausa — costo se sbagliata: l'host dovrà riscegliere 'Fai giocare un bot al suo posto'.
 - **Espulsione dal vivo: evento room:kicked al solo socket espulso, che viene slegato dalla stanza; il client cancella il token e mostra Join con "Sei stato espulso dalla stanza"** — senza evento il client espulso restava su uno stato vecchio — costo se sbagliata: togliere l evento e gestire l errore al prossimo join.
 - **Rotta /dev/cards con React.lazy sotto `import.meta.env.DEV`** — esclusa dal bundle di produzione senza router — se serve in prod basta rimuovere la condizione.
 - **Font Bevan da Google Fonts per i ranghi, con fallback serif di sistema** — carattere scolpito e leggibile — offline si ricade su Rockwell/Georgia.
@@ -67,3 +67,9 @@ Formato: **decisione** — perché — costo se sbagliata.
 - **Ingresso con il codice nella home, accanto a "Crea stanza"**, con lo stesso nickname: la stanza viene verificata subito (`room:join`), quindi un codice sbagliato dà l'errore nella home invece di portare in una pagina vuota.
 - **Il suggerimento "Hai l'app?" compare solo nel browser di telefoni e tablet** (iOS, o puntatore "coarse") e mai nell'app installata o su computer.
 - **Codici in carattere normale invece che gotico** (lobby, campo, suggerimento): in Grenze Gotisch lettere come H, M, G si confondono quando vanno dettate.
+
+## Pausa: scelte dell'host e bot automatico (2026-11-15, SPEC §7.2)
+- **Bug: le tre scelte potevano non comparire mai.** Il timer dei 2 minuti avvisava i client senza ricontrollare: se `setTimeout` scattava qualche millisecondo prima di `Date.now()`, la grazia risultava non scaduta e nessuno riarmava il timer. Ora allo scatto si ricalcola tutto (`changed()`, che riarma se serve) e c'è un margine di 50 ms.
+- **Bot automatico 1 minuto dopo le scelte** (`AUTO_BOT_MS`, richiesta esplicita), anche se l'host è connesso. Solo se c'è almeno un umano connesso, altrimenti nessuno ne beneficerebbe e la partita andrebbe avanti da sola.
+- **"Aspetta" fa ripartire i 2 minuti** (`graceFrom`), quindi anche il bot automatico slitta: prima, dopo "Aspetta", l'host restava senza scelte finché la pausa non cambiava.
+- **Conto alla rovescia in ms relativi** (`autoBotInMs`), non un orario assoluto: gli orologi dei telefoni possono essere sfasati rispetto al server.

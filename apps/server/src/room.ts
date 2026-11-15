@@ -37,6 +37,8 @@ export interface Seat {
   botControlled: boolean;
   socketId?: string;
   disconnectedAt?: number;
+  /** Da quando contano i 2 minuti di grazia: la disconnessione, oppure l'ultimo "Aspetta" dell'host. */
+  graceFrom?: number;
 }
 
 export type RoomStatus = 'lobby' | 'playing' | 'ended';
@@ -47,6 +49,9 @@ export function validateNickname(raw: string | undefined): string | null {
   const n = (raw ?? '').trim();
   return n.length >= 1 && n.length <= MAX_NICKNAME_LENGTH ? n : null;
 }
+
+/** Margine sui timer della pausa: setTimeout può scattare qualche millisecondo prima di Date.now(). */
+const TIMER_SLACK_MS = 50;
 
 export class Room {
   readonly code: string;
@@ -107,6 +112,7 @@ export class Room {
     seat.connected = true;
     seat.socketId = socketId;
     seat.disconnectedAt = undefined;
+    seat.graceFrom = undefined;
     seat.botControlled = false;
     const host = this.seats.find((s) => s.id === this.hostId);
     if (!host || !host.connected) this.hostId = seat.id;
@@ -121,6 +127,7 @@ export class Room {
     seat.connected = false;
     seat.socketId = undefined;
     seat.disconnectedAt = this.deps.now();
+    seat.graceFrom = seat.disconnectedAt;
     if (this.hostId === seat.id) this.transferHost(seat);
     this.lastHumanSeenAt = this.deps.now();
     this.changed();
@@ -233,7 +240,9 @@ export class Room {
   pauseInfo(): PauseView | null {
     const seat = this.pausedSeat();
     if (!seat) return null;
-    return { waitingFor: seat.id, hostCanDecide: this.graceElapsed(seat) };
+    const canDecide = this.graceElapsed(seat);
+    const autoBotInMs = canDecide && this.hasConnectedHumans() ? Math.max(0, this.autoBotAt(seat) - this.deps.now()) : null;
+    return { waitingFor: seat.id, hostCanDecide: canDecide, autoBotInMs };
   }
 
   private turnSeat(): Seat | null {
@@ -248,15 +257,29 @@ export class Room {
     return s && !s.isBot && !s.connected && !s.botControlled ? s : null;
   }
 
+  private graceEnd(seat: Seat): number {
+    return (seat.graceFrom ?? seat.disconnectedAt ?? 0) + this.deps.cfg.disconnectGraceMs;
+  }
+
   private graceElapsed(seat: Seat): boolean {
-    return this.deps.now() - (seat.disconnectedAt ?? 0) >= this.deps.cfg.disconnectGraceMs;
+    return this.deps.now() >= this.graceEnd(seat);
+  }
+
+  /** Momento in cui il bot prende il posto da solo, se l'host non ha scelto (SPEC §7.2). */
+  private autoBotAt(seat: Seat): number {
+    return this.graceEnd(seat) + this.deps.cfg.autoBotMs;
   }
 
   hostDecision(by: PlayerId, choice: 'wait' | 'bot' | 'end'): Res {
     if (by !== this.hostId) return { ok: false, error: 'not-host' };
     const seat = this.pausedSeat();
     if (!seat || !this.graceElapsed(seat)) return { ok: false, error: 'no-pause' };
-    if (choice === 'wait') return { ok: true };
+    if (choice === 'wait') {
+      // "Aspetta": le scelte spariscono e tornano dopo altri 2 minuti (niente bot automatico nel frattempo)
+      seat.graceFrom = this.deps.now();
+      this.changed();
+      return { ok: true };
+    }
     if (choice === 'bot') seat.botControlled = true;
     else if (choice === 'end') this.setGame(endGameNow(this.game as GameState));
     else return { ok: false, error: 'bad-choice' };
@@ -319,16 +342,27 @@ export class Room {
         this.actionTimer = null;
         this.runBotMove();
       }, this.deps.cfg.botMoveDelayMs);
-    } else if (this.pausedSeat() && !this.graceElapsed(seat)) {
-      const wait = this.deps.cfg.disconnectGraceMs - (this.deps.now() - (seat.disconnectedAt ?? 0));
-      this.graceTimer = this.deps.setTimer(() => {
-        this.graceTimer = null;
-        try {
-          this.deps.onChange(this);
-        } catch (e) {
-          console.error('Errore nel timer di disconnessione', e);
-        }
-      }, Math.max(0, wait));
+    } else if (this.pausedSeat()) {
+      // In pausa: prima i 2 minuti di grazia (poi l'host sceglie), poi il bot automatico se nessuno sceglie.
+      // Allo scatto si ricontrolla tutto con changed(): un timer che scatta in anticipo di qualche
+      // millisecondo si limita a riarmarsi, invece di lasciare la pausa senza scelte.
+      const now = this.deps.now();
+      if (!this.graceElapsed(seat)) {
+        this.graceTimer = this.deps.setTimer(() => this.fireGraceTimer(), Math.max(0, this.graceEnd(seat) - now) + TIMER_SLACK_MS);
+      } else if (this.hasConnectedHumans()) {
+        this.graceTimer = this.deps.setTimer(() => this.fireGraceTimer(), Math.max(0, this.autoBotAt(seat) - now) + TIMER_SLACK_MS);
+      }
+    }
+  }
+
+  private fireGraceTimer(): void {
+    this.graceTimer = null;
+    try {
+      const seat = this.pausedSeat();
+      if (seat && this.hasConnectedHumans() && this.deps.now() >= this.autoBotAt(seat)) seat.botControlled = true;
+      this.changed();
+    } catch (e) {
+      console.error('Errore nel timer di disconnessione', e);
     }
   }
 

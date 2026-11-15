@@ -10,6 +10,11 @@ export interface SeatView {
 export interface PauseView {
   waitingFor: PlayerId;
   hostCanDecide: boolean;
+  /**
+   * Millisecondi (al momento dell'invio) prima che un bot prenda il posto da solo, se l'host non sceglie;
+   * null se l'host non può ancora scegliere o se non c'è nessuno connesso ad aspettare.
+   */
+  autoBotInMs: number | null;
 }
 export interface RoomView {
   code: string;

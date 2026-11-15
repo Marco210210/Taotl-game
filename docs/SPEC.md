@@ -228,9 +228,10 @@ Quando si sbaglia, il premio per il rispetto non si conta.
 - Se un giocatore si disconnette, il suo posto risulta "disconnesso", ma **la partita continua** finché non tocca a lui.
 - La partita va **in pausa** solo quando è il **turno** di un giocatore disconnesso, che sia per dichiarare o per giocare. Quando rientra col suo token si riprende da dove si era rimasti.
 - Se la pausa dura e sono passati almeno **2 minuti** dalla disconnessione, l'host sceglie tra:
-  1. **Aspetta ancora**
-  2. **Gioca al suo posto**: il posto passa al **bot** (§8), che gioca subito il turno in sospeso. Se il giocatore rientra, riprende il suo posto.
-  3. **Termina partita**, con la classifica attuale.
+  1. **Aspetta**: le scelte spariscono e tornano dopo altri 2 minuti (nel frattempo niente bot automatico).
+  2. **Fai giocare un bot al suo posto**: il posto passa al **bot** (§8), che gioca subito il turno in sospeso. Se il giocatore rientra, riprende il suo posto.
+  3. **Termina la partita**, con la classifica attuale.
+- **Bot automatico**: se l'host non sceglie entro **1 minuto** da quando compaiono le scelte (cioè 3 minuti dalla disconnessione), anche se è connesso, il bot prende il posto da solo, come con la scelta 2. Chi è disconnesso può rientrare quando vuole e riprende il suo posto. Nella finestra di pausa tutti vedono il conto alla rovescia ("Se non scegli, tra N s gioca un bot al posto di X"). Se non c'è nessun umano connesso ad aspettare, niente bot automatico: la partita resta in pausa.
 - **Disconnessione dell'host**: il ruolo di host (e le scelte sopra) passa **subito e automaticamente** al **primo giocatore umano connesso** nell'ordine dei posti, a partire dal posto successivo a quello del vecchio host. Se il vecchio host rientra, **non torna host**.
 - Se non resta nessun umano connesso, la partita resta in pausa e la stanza si elimina dopo il tempo di inattività (§7.1).
 - **Uscire dall'app non fa uscire dalla partita** (es. passare a WhatsApp): la connessione si chiude, ma il posto resta. Al ritorno (eventi `visibilitychange`, `focus`, `online`) il client si riconnette subito col token in `localStorage`, senza schermate di errore né di ingresso. I 2 minuti prima delle scelte dell'host bastano per una breve uscita e restano invariati: valgono solo se tocca proprio a chi è uscito, e una connessione sospesa per meno di ~45 s non risulta nemmeno disconnessa.

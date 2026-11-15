@@ -54,7 +54,7 @@ Per lanciarlo a mano: `ssh oracle-server "bash ~/progetti/Taotl-game/deploy.sh"`
 | Firewall | Nessuna modifica: iptables lascia passare solo 22/80/443 e il gioco ascolta solo su localhost |
 
 Variabili facoltative del server (vedi `apps/server/src/config.ts`): `BOT_MOVE_DELAY_MS`,
-`TRICK_PAUSE_MS`, `DISCONNECT_GRACE_MS`, `ROOM_IDLE_MS`. Dopo averle modificate:
+`TRICK_PAUSE_MS`, `DISCONNECT_GRACE_MS` (2 minuti), `AUTO_BOT_MS` (1 minuto dopo la grazia), `ROOM_IDLE_MS`. Dopo averle modificate:
 `systemctl --user restart taotl-game`.
 
 ## App installabile e cache

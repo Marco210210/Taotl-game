@@ -9,6 +9,7 @@ const cfg = loadConfig({});
 const BOT = cfg.botMoveDelayMs;
 const PAUSE = cfg.trickPauseMs;
 const GRACE = cfg.disconnectGraceMs;
+const AUTO = cfg.autoBotMs;
 
 function mk(over: Partial<RoomDeps> = {}) {
   const onChange = vi.fn();
@@ -206,7 +207,7 @@ describe('pause e decisioni dell host', () => {
     expect(roomViewFor(room, viewer).pause).toBeNull();
     untilTurnOrPause(room, notTurn);
     expect(turnId(room)).toBe(notTurn);
-    expect(roomViewFor(room, viewer).pause).toEqual({ waitingFor: notTurn, hostCanDecide: false });
+    expect(roomViewFor(room, viewer).pause).toEqual({ waitingFor: notTurn, hostCanDecide: false, autoBotInMs: null });
   });
 
   it('hostDecision prima della grazia -> rifiutata; dopo -> bot gioca il turno in sospeso', () => {
@@ -219,9 +220,9 @@ describe('pause e decisioni dell host', () => {
     onChange.mockClear();
     vi.advanceTimersByTime(1);
     expect(room.pauseInfo()?.hostCanDecide).toBe(true);
-    expect(onChange).toHaveBeenCalledTimes(1); // timer di grazia
-    expect(room.hostDecision(host, 'wait')).toEqual({ ok: true });
-    expect(room.pauseInfo()?.hostCanDecide).toBe(true);
+    vi.advanceTimersByTime(50); // margine del timer
+    expect(onChange).toHaveBeenCalledTimes(1); // timer di grazia: avvisa i client
+    expect(room.pauseInfo()?.autoBotInMs).toBeGreaterThan(AUTO - 100);
     expect(room.hostDecision(victim, 'bot')).toEqual({ ok: false, error: 'not-host' });
     expect(room.hostDecision(host, 'bot')).toEqual({ ok: true });
     expect(room.seats.find((s) => s.id === victim)!.botControlled).toBe(true);
@@ -230,6 +231,84 @@ describe('pause e decisioni dell host', () => {
     vi.advanceTimersByTime(BOT);
     expect(room.game).not.toBe(before);
     expect(room.game!.players.find((p) => p.id === victim)!.bid).not.toBeNull();
+  });
+
+  it("se l'host non sceglie entro 1 minuto dalle opzioni, il bot prende il posto da solo; rientrando lo riprende", () => {
+    const { room, victim } = setup();
+    room.disconnect(victim, 's1');
+    untilTurnOrPause(room, victim);
+    vi.advanceTimersByTime(GRACE + 50);
+    expect(room.pauseInfo()?.hostCanDecide).toBe(true);
+    vi.advanceTimersByTime(AUTO - 200);
+    expect(room.seats.find((s) => s.id === victim)!.botControlled).toBe(false);
+    vi.advanceTimersByTime(300);
+    expect(room.seats.find((s) => s.id === victim)!.botControlled).toBe(true);
+    expect(room.pauseInfo()).toBeNull();
+    vi.advanceTimersByTime(BOT);
+    expect(room.game!.players.find((p) => p.id === victim)!.bid).not.toBeNull();
+    room.connect(victim, 's1b');
+    expect(room.seats.find((s) => s.id === victim)!.botControlled).toBe(false);
+  });
+
+  it('"Aspetta" nasconde le scelte, niente bot automatico; le scelte tornano dopo altri 2 minuti', () => {
+    const { room, victim, host } = setup();
+    room.disconnect(victim, 's1');
+    untilTurnOrPause(room, victim);
+    vi.advanceTimersByTime(GRACE + 50);
+    expect(room.hostDecision(host, 'wait')).toEqual({ ok: true });
+    expect(room.pauseInfo()).toMatchObject({ hostCanDecide: false, autoBotInMs: null });
+    vi.advanceTimersByTime(AUTO + 100);
+    expect(room.seats.find((s) => s.id === victim)!.botControlled).toBe(false);
+    vi.advanceTimersByTime(GRACE - AUTO);
+    expect(room.pauseInfo()?.hostCanDecide).toBe(true);
+    vi.advanceTimersByTime(AUTO + 100);
+    expect(room.seats.find((s) => s.id === victim)!.botControlled).toBe(true);
+  });
+
+  it('nessun umano connesso ad aspettare: niente bot automatico, la partita resta in pausa', () => {
+    const ctx = started(2);
+    const [a, b] = ctx.ids as [PlayerId, PlayerId];
+    ctx.room.disconnect(b, 's1');
+    untilTurnOrPause(ctx.room, b);
+    ctx.room.disconnect(a, 's0');
+    vi.advanceTimersByTime(GRACE + AUTO + 1000);
+    expect(ctx.room.seats.find((s) => s.id === b)!.botControlled).toBe(false);
+    expect(ctx.room.pauseInfo()).toMatchObject({ waitingFor: b, autoBotInMs: null });
+  });
+
+  it('timer di grazia che scatta in anticipo (orologio indietro di qualche ms): le scelte arrivano comunque', () => {
+    let t = 1_000_000;
+    const timers: Array<{ at: number; fn: () => void }> = [];
+    const ctx = mk({
+      now: () => t,
+      setTimer: (fn, ms) => {
+        const item = { at: t + ms, fn };
+        timers.push(item);
+        return () => timers.splice(timers.indexOf(item) >>> 0, 1);
+      },
+    });
+    const ids: PlayerId[] = [];
+    for (let i = 0; i < 3; i++) {
+      const r = ctx.room.join(`P${i}`);
+      if (!r.ok) throw new Error(r.error);
+      ctx.room.connect(r.playerId, `s${i}`);
+      ids.push(r.playerId);
+    }
+    ctx.room.start(ids[0] as PlayerId);
+    const victim = ids[1] as PlayerId;
+    ctx.room.disconnect(victim, 's1');
+    untilTurnOrPause(ctx.room, victim);
+    expect(ctx.room.pauseInfo()?.hostCanDecide).toBe(false);
+    // scatta il timer di grazia ma l'orologio segna 60 ms in meno del previsto
+    const first = timers.shift()!;
+    t = first.at - 60;
+    first.fn();
+    expect(ctx.room.pauseInfo()?.hostCanDecide).toBe(false);
+    // si è riarmato: al suo scatto le scelte compaiono
+    const again = timers.shift()!;
+    t = again.at;
+    again.fn();
+    expect(ctx.room.pauseInfo()?.hostCanDecide).toBe(true);
   });
 
   it('il giocatore rientra mentre il bot sostituto ha una mossa in timer -> il timer non gioca', () => {

@@ -91,20 +91,20 @@ describe('Table: scelta del Dio', () => {
 
 describe('PauseDialog', () => {
   it("non-host vede solo l'attesa", () => {
-    render(<PauseDialog view={view(game(null), { waitingFor: 'b', hostCanDecide: true }, 'b')} emit={vi.fn()} />);
+    render(<PauseDialog view={view(game(null), { waitingFor: 'b', hostCanDecide: true, autoBotInMs: null }, 'b')} emit={vi.fn()} />);
     expect(screen.getByTestId('pause-dialog')).toHaveTextContent('In attesa di B');
     expect(screen.queryByTestId('btn-pause-wait')).toBeNull();
   });
   it('host con hostCanDecide vede i tre pulsanti', async () => {
     const emit = vi.fn().mockResolvedValue({ ok: true });
-    render(<PauseDialog view={view(game(null), { waitingFor: 'b', hostCanDecide: true })} emit={emit} />);
+    render(<PauseDialog view={view(game(null), { waitingFor: 'b', hostCanDecide: true, autoBotInMs: null })} emit={emit} />);
     await userEvent.click(screen.getByTestId('btn-pause-bot'));
     expect(emit).toHaveBeenCalledWith('host:decision', { choice: 'bot' });
     expect(screen.getByTestId('btn-pause-wait')).toBeInTheDocument();
     expect(screen.getByTestId('btn-pause-end')).toBeInTheDocument();
   });
   it('host senza hostCanDecide non vede i pulsanti', () => {
-    render(<PauseDialog view={view(game(null), { waitingFor: 'b', hostCanDecide: false })} emit={vi.fn()} />);
+    render(<PauseDialog view={view(game(null), { waitingFor: 'b', hostCanDecide: false, autoBotInMs: null })} emit={vi.fn()} />);
     expect(screen.queryByTestId('btn-pause-wait')).toBeNull();
   });
 });
