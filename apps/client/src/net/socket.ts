@@ -19,6 +19,7 @@ export function getToken(code: string): string | null {
 export function setToken(code: string, token: string): void {
   try {
     localStorage.setItem(key(code), token);
+    localStorage.setItem(CURRENT, code.toUpperCase());
   } catch {
     /* localStorage non disponibile */
   }
@@ -27,6 +28,28 @@ export function setToken(code: string, token: string): void {
 export function removeToken(code: string): void {
   try {
     localStorage.removeItem(key(code));
+  } catch {
+    /* localStorage non disponibile */
+  }
+  clearCurrentRoom(code);
+}
+
+/**
+ * Stanza in corso (SPEC §7.2): chi chiude l'app e la riapre torna direttamente lì, finché la partita
+ * non finisce. Si imposta entrando in una stanza e si cancella a fine partita, espulsione o stanza sparita.
+ */
+const CURRENT = 'taotl:current-room';
+export function getCurrentRoom(): string | null {
+  try {
+    const code = localStorage.getItem(CURRENT);
+    return code && getToken(code) ? code : null;
+  } catch {
+    return null;
+  }
+}
+export function clearCurrentRoom(code?: string): void {
+  try {
+    if (!code || localStorage.getItem(CURRENT) === code.toUpperCase()) localStorage.removeItem(CURRENT);
   } catch {
     /* localStorage non disponibile */
   }

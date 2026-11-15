@@ -83,3 +83,58 @@ test("app in background (es. WhatsApp): al ritorno riconnessione immediata, senz
     await a.context.close();
   }
 });
+
+test("app chiusa e riaperta dalla schermata Home (parte da /): torna dritta alla partita, finché non finisce", async ({ browser }) => {
+  const a = await newPlayer(browser);
+  const b = await newPlayer(browser);
+  try {
+    const url = await createRoom(a.page, 'Anna');
+    await joinRoom(b.page, url, 'Bruno');
+    await a.page.getByTestId('btn-start').click();
+    await expect(b.page.locator(HAND_CARDS).first()).toBeVisible();
+    const before = await b.page.locator(HAND_CARDS).evaluateAll((els) => els.map((e) => e.getAttribute('data-card-id')).sort());
+
+    // B chiude l'app: gli altri vedono "In attesa di Bruno"
+    await b.page.close();
+    // (la pausa compare quando tocca a lui: A gioca finché non succede)
+    await runUntil([a.page], () => isVisible(a.page, 'pause-dialog'), { label: 'pausa per Bruno' });
+    await expect(a.page.getByTestId('pause-dialog')).toContainText('In attesa di Bruno');
+
+    // B riapre l'app: si parte da "/" come dall'icona, e si torna subito al tavolo con la stessa mano
+    const again = await b.context.newPage();
+    await again.goto('/');
+    await expect(again).toHaveURL(url);
+    await expect(again.getByTestId('table')).toBeVisible();
+    await expect(again.getByTestId('input-nickname')).toHaveCount(0);
+    expect(await again.locator(HAND_CARDS).evaluateAll((els) => els.map((e) => e.getAttribute('data-card-id')).sort())).toEqual(before);
+    await expect(a.page.getByTestId('pause-dialog')).toHaveCount(0);
+
+    // dentro l'app "Torna alla home" resta possibile: la home non rimanda indietro se non all'avvio
+    await again.evaluate(() => {
+      history.pushState(null, '', '/');
+      dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await expect(again.getByTestId('input-nickname')).toBeVisible();
+  } finally {
+    await Promise.all([a, b].map((x) => x.context.close()));
+  }
+});
+
+test('stanza sparita mentre l\'app era chiusa: riaprendo si resta nella home, senza errori', async ({ browser }) => {
+  const a = await newPlayer(browser);
+  try {
+    await a.page.goto('/');
+    await a.page.evaluate(() => {
+      localStorage.setItem('taotl:token:ZZZZ', 'vecchio-token');
+      localStorage.setItem('taotl:current-room', 'ZZZZ');
+    });
+    await a.page.goto('/');
+    await expect(a.page.getByTestId('input-nickname')).toBeVisible();
+    await expect(a.page).toHaveURL(/\/$/);
+    await expect(a.page.getByRole('alert')).toHaveCount(0);
+    // e la volta dopo non ci riprova
+    expect(await a.page.evaluate(() => localStorage.getItem('taotl:current-room'))).toBeNull();
+  } finally {
+    await a.context.close();
+  }
+});

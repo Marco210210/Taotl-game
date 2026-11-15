@@ -1,4 +1,5 @@
-import { Link } from '../Link';
+import { useEffect } from 'react';
+import { Link, navigate } from '../Link';
 import { errorMessage } from '../lib/errors';
 import { useRoom } from '../net/useRoom';
 import { FinalRanking } from './FinalRanking';
@@ -34,6 +35,18 @@ export function TakenOver({ onResume }: { onResume: () => void }) {
 
 export function Room({ code }: { code: string }) {
   const { view, error, needsJoin, join, emit, takenOver, resume, connected } = useRoom(code);
+  // stanza sparita mentre l'app era chiusa (scaduta, server riavviato): si torna alla home senza errori
+  const gone = error === 'room-not-found' && !view;
+  useEffect(() => {
+    if (!gone) return;
+    let resumed = false;
+    try {
+      resumed = sessionStorage.getItem('taotl:resumed') === code;
+    } catch {
+      /* sessionStorage non disponibile */
+    }
+    if (resumed) navigate('/');
+  }, [gone, code]);
   if (takenOver) return <TakenOver onResume={resume} />;
   if (error === 'room-not-found' || error === 'game-started') return <Failure error={error} />;
   if (needsJoin) return <Join code={code} error={error} onJoin={join} />;

@@ -162,7 +162,7 @@ describe('Table: fix 4.2', () => {
     expect(within(screen.getByTestId('seat-c')).getByTestId('badge-offline')).toBeInTheDocument();
     expect(within(screen.getByTestId('seat-a')).queryByTestId('badge-offline')).toBeNull();
   });
-  it("seme della presa al centro e carta che l'ha deciso in risalto (anche se non è la prima)", () => {
+  it('durante la presa nessuna scritta al centro (né seme né chi ha giocato)', () => {
     const g = playing({
       currentTrick: [
         { playerId: 'b', card: { kind: 'chipetl', n: 1 }, valid: false, label: null },
@@ -171,15 +171,19 @@ describe('Table: fix 4.2', () => {
       trickSuit: 'quadri',
     });
     render(<Table view={view(g)} emit={vi.fn()} />);
-    expect(screen.getByTestId('trick-suit')).toHaveTextContent('Quadri');
-    expect(screen.getByTestId('trick-suit')).toHaveTextContent('da C');
-    expect(screen.getAllByTestId('trick-slot').map((s) => s.getAttribute('data-decider'))).toEqual(['false', 'true']);
+    expect(screen.queryByTestId('trick-suit')).toBeNull();
+    expect(screen.queryByTestId('trick-taken')).toBeNull();
+    expect(document.querySelector('.table-center')!.textContent).not.toMatch(/Quadri|da C/);
     expect(within(screen.getByTestId('seat-b')).getByTestId('leader-mark')).toBeInTheDocument();
   });
-  it('senza carte di colore niente seme al centro', () => {
-    const g = playing({ currentTrick: [{ playerId: 'b', card: { kind: 'chipetl', n: 1 }, valid: false, label: null }], trickSuit: null });
+  it("a presa conclusa compare chi l'ha presa", () => {
+    const cards = [
+      { playerId: 'b', card: { kind: 'suited', suit: 'quadri', rank: 7 }, valid: true, label: null },
+      { playerId: 'c', card: { kind: 'suited', suit: 'quadri', rank: 9 }, valid: true, label: null },
+    ] as const;
+    const g = playing({ phase: 'trickEnd', currentTrick: [], tricksThisHand: [{ winnerId: 'c', cards: [...cards] }] });
     render(<Table view={view(g)} emit={vi.fn()} />);
-    expect(screen.queryByTestId('trick-suit')).toBeNull();
+    expect(screen.getByTestId('trick-taken')).toHaveTextContent('Presa di C');
   });
   it('niente ultima presa nell interfaccia', () => {
     const g = playing({ tricksThisHand: [{ winnerId: 'b', cards: [{ playerId: 'b', card: { kind: 'suited', suit: 'fiori', rank: 2 }, valid: true, label: null }] }] });

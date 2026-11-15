@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RoomView } from '@taotl/protocol';
-import { getSocket, getToken, removeToken, request, setToken, type AppSocket, type TypedEmit } from './socket';
+import { clearCurrentRoom, getSocket, getToken, removeToken, request, setToken, type AppSocket, type TypedEmit } from './socket';
 
 const REJOIN_FAIL = ['bad-token', 'kicked'];
 /** Oltre questo tempo senza risposta, al ritorno in primo piano la connessione si considera morta. */
@@ -23,7 +23,11 @@ export function useRoom(code: string) {
   useEffect(() => {
     const s = getSocket();
     const emit = request(s);
-    const onState = (v: RoomView) => setView(v);
+    const onState = (v: RoomView) => {
+      setView(v);
+      // partita finita: riaprendo l'app non si torna più qui
+      if (v.status === 'ended') clearCurrentRoom(code);
+    };
     const onKicked = () => {
       removeToken(code);
       setView(null);
@@ -49,6 +53,7 @@ export function useRoom(code: string) {
         setNeedsJoin(false);
       } else {
         setError(r.error);
+        if (r.error === 'room-not-found') clearCurrentRoom(code);
         if (REJOIN_FAIL.includes(r.error)) {
           removeToken(code);
           setNeedsJoin(true);

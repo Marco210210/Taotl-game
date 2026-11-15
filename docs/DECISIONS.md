@@ -34,7 +34,7 @@ Formato: **decisione** — perché — costo se sbagliata.
 - **Riepilogo e classifica usano lo stesso ordinamento** (`lib/standings.ts`): totale decrescente, a parità ordine dei posti dal mazziere; nel riepilogo è il mazziere della mano appena finita, che è ancora quello della vista.
 - **I totali della classifica sono la somma di `handScores`**, non `total`, così per costruzione non entrano mai punti della mano in corso.
 - **Posizione in classifica a pari merito**: stesso numero, mostrato solo sulla prima riga del gruppo.
-- **Chi ha aperto la presa: asterisco rosso e bordo rosso sulla targhetta**; la carta che ha deciso il seme ha un contorno rosso; l'etichetta al centro dice anche chi l'ha giocata ("Totem da Bot 1") — la carta può non essere la prima, così si capisce quale è.
+- **Chi ha aperto la presa: asterisco rosso e bordo rosso sulla targhetta**; la carta che ha deciso il seme ha un contorno rosso; (2026-11-15) tolta su richiesta l'etichetta al centro col seme e chi l'ha giocato: al suo posto, solo a presa conclusa, "Presa di X".
 - **Targhette su tre righe** (nome e punti; "Chiamate N" e carte in mano; "Prese N" e badge); con più di 8 giocatori il testo è più piccolo — con le due righe separate a 12 giocatori su 844×390 le targhette si sovrapponevano.
 - **Tutto schermo automatico solo su dispositivi touch** (`pointer: coarse`), al tocco su "Crea stanza" o "Entra"; su desktop solo col pulsante — su un computer il tutto schermo non richiesto disturba e non serve a bloccare l'orientamento.
 - **"Torna a tutto schermo" si ricorda per la scheda** (`sessionStorage`): compare se il giocatore aveva scelto il tutto schermo e il browser l'ha tolto; dopo "Esci da tutto schermo" non ricompare.

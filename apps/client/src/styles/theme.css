@@ -361,12 +361,12 @@ input:focus-visible { outline-offset: 0; }
   max-width: min(58%, 560px);
   width: max-content;
 }
-.trick-suit {
+.trick-taken {
   margin: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 12px 2px 6px;
+  padding: 2px 14px;
   border-radius: 999px;
   background: var(--paper);
   color: var(--ink);
@@ -377,8 +377,6 @@ input:focus-visible { outline-offset: 0; }
   line-height: 1.2;
   white-space: nowrap;
 }
-.trick-suit svg { width: 1.15em; height: 1.45em; flex: none; }
-.trick-suit small { font-family: var(--font-text); font-weight: 400; font-size: 0.72em; color: var(--ink-soft); }
 .table-note { margin: 0; font-family: var(--font-display); font-size: clamp(0.95rem, 4vh, 1.5rem); color: rgba(251, 250, 245, 0.75); text-align: center; }
 
 /* Dichiarazione: gettoni */

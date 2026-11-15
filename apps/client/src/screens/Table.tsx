@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { cardId, godPlayStatus, legalCards, trickSuit, type Card as CardT, type CardId, type Intent } from '@taotl/engine';
+import { cardId, godPlayStatus, legalCards, type Card as CardT, type CardId, type Intent } from '@taotl/engine';
 import type { RoomView } from '@taotl/protocol';
 import { BidPanel } from '../components/BidPanel';
 import { GodChoice } from '../components/GodChoice';
@@ -7,11 +7,9 @@ import { Hand } from '../components/Hand';
 import { PauseDialog } from '../components/PauseDialog';
 import { Seat } from '../components/Seat';
 import { StandingsDialog } from '../components/StandingsDialog';
-import { TrickArea, deciderIndex } from '../components/TrickArea';
-import { Pip } from '../components/cardArt/pips';
+import { TrickArea } from '../components/TrickArea';
 import { FeltMark } from '../components/FeltMark';
 import { errorMessage } from '../lib/errors';
-import { suitName } from '../lib/labels';
 import { tableLayout, type RingBox } from '../lib/seatLayout';
 import type { TypedEmit } from '../net/socket';
 import { HandSummary } from './HandSummary';
@@ -80,8 +78,6 @@ export function Table({ view, emit, connected = true }: { view: RoomView; emit: 
   const trickCards = ended ? ended.cards : game.currentTrick;
   const trickNo = ended ? game.tricksThisHand.length - 1 : game.tricksThisHand.length;
   const leaderId = trickCards[0]?.playerId;
-  const suit = trickSuit(trickCards);
-  const decider = trickCards[deciderIndex(trickCards)];
   const active = game.phase === 'bidding' || game.phase === 'playing';
   const myTurn = game.turnId === view.me && active && !view.pause;
   const playable = new Set<CardId>(myTurn ? game.playableCardIds : []);
@@ -147,16 +143,9 @@ export function Table({ view, emit, connected = true }: { view: RoomView; emit: 
           </p>
         )}
         <div className="table-center">
-          {suit && game.legalBids.length === 0 && (
-            <p className="trick-suit" data-testid="trick-suit" data-suit={suit}>
-              <svg viewBox="0 0 24 30" aria-hidden="true">
-                <Pip kind={suit} cx={12} cy={15} w={22} />
-              </svg>
-              <span>
-                {suitName(suit)}
-                {decider && decider.playerId !== view.me && <small> da {nick(decider.playerId)}</small>}
-                {decider && decider.playerId === view.me && <small> da te</small>}
-              </span>
+          {ended && (
+            <p className="trick-taken" data-testid="trick-taken" role="status">
+              {ended.winnerId === view.me ? 'Presa tua' : `Presa di ${nick(ended.winnerId)}`}
             </p>
           )}
           {game.legalBids.length > 0 && !view.pause && (

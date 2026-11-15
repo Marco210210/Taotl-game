@@ -4,6 +4,23 @@ import { FullscreenButton } from './components/FullscreenButton';
 import { RotateNotice } from './components/RotateNotice';
 import { Home } from './screens/Home';
 import { Room } from './screens/Room';
+import { getCurrentRoom } from './net/socket';
+
+/**
+ * All'avvio sulla home (es. app riaperta dalla schermata Home, che parte da "/"): se c'è una partita
+ * in corso si torna dritti alla stanza (SPEC §7.2). Solo all'avvio: "Torna alla home" resta possibile.
+ */
+function startPath(): string {
+  const current = location.pathname === '/' ? getCurrentRoom() : null;
+  if (!current) return location.pathname;
+  history.replaceState(null, '', `/r/${current}`);
+  try {
+    sessionStorage.setItem('taotl:resumed', current);
+  } catch {
+    /* sessionStorage non disponibile */
+  }
+  return location.pathname;
+}
 
 const CardGallery = import.meta.env.DEV
   ? lazy(() => import('./screens/CardGallery').then((m) => ({ default: m.CardGallery })))
@@ -13,7 +30,7 @@ const TablePreview = import.meta.env.DEV
   : null;
 
 export function App() {
-  const [path, setPath] = useState(location.pathname);
+  const [path, setPath] = useState(startPath);
   useEffect(() => {
     const on = () => setPath(location.pathname);
     window.addEventListener('popstate', on);
