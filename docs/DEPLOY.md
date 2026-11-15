@@ -1,6 +1,6 @@
 # Deploy del gioco online
 
-Il gioco è pubblicato su **https://taotl-game.duckdns.org**, sul server Oracle
+Il gioco è pubblicato su **https://taotl-game.duckdns.org** e su **https://taotl.smazziamoci.duckdns.org** (stesso server, stessa app), sul server Oracle
 (`ubuntu@130.110.16.97`, host SSH `oracle-server` in `~/.ssh/config`).
 
 ## Pubblicare un aggiornamento
@@ -48,8 +48,9 @@ Per lanciarlo a mano: `ssh oracle-server "bash ~/progetti/Taotl-game/deploy.sh"`
 | Node 26 + pnpm 12.18.0 | `~/.local/node-26` (isolato: il Node 22 di sistema serve agli altri servizi e **non va aggiornato**) |
 | Servizio | systemd **utente** `taotl-game.service` (`~/.config/systemd/user/`), utente `ubuntu`, `Restart=always`, avvio al boot grazie al linger attivo; stesso schema di `taotl-expo-go` |
 | Variabili d'ambiente | `~/.config/taotl-game.env` (permessi 600): `NODE_ENV=production`, `HOST=127.0.0.1`, `PORT=8140` |
-| Reverse proxy | Caddy: `/etc/caddy/gioco-taotl.Caddyfile`, incluso con `import` in fondo a `/etc/caddy/Caddyfile`. HTTPS automatico, WebSocket inoltrati da `reverse_proxy`. Il vecchio `gioco-taotl.130.110.16.97.sslip.io` rimanda (301) al nuovo indirizzo: i filtri antiphishing (es. TIM) bloccano `sslip.io` |
-| DNS | DuckDNS `taotl-game.duckdns.org` → 130.110.16.97 (IP fisso del server) |
+| Reverse proxy | Caddy: `/etc/caddy/gioco-taotl.Caddyfile`, incluso con `import` in fondo a `/etc/caddy/Caddyfile`. HTTPS automatico, WebSocket inoltrati da `reverse_proxy`. Il vecchio `gioco-taotl.130.110.16.97.sslip.io` risponde 410 con un messaggio, senza rimando: i filtri antiphishing (es. TIM) bloccano `sslip.io` e un redirect da lì potrebbe far segnalare anche i nuovi indirizzi |
+| DNS | DuckDNS `taotl-game.duckdns.org` → 130.110.16.97 (IP fisso del server). `taotl.smazziamoci.duckdns.org` funziona da solo: DuckDNS risolve tutti i sottodomini di `smazziamoci` sullo stesso IP |
+| Header di sicurezza | Li imposta Node (`setSecurityHeaders` in `apps/server/src/app.ts`): CSP rigorosa, `X-Frame-Options`, `nosniff`, niente `X-Powered-By`. Il sito non fa richieste a domini esterni (font in `@fontsource`) |
 | Firewall | Nessuna modifica: iptables lascia passare solo 22/80/443 e il gioco ascolta solo su localhost |
 
 Variabili facoltative del server (vedi `apps/server/src/config.ts`): `BOT_MOVE_DELAY_MS`,

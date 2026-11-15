@@ -2,6 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { initInstall } from './lib/install';
+// font serviti dal nostro server (nessuna richiesta a domini esterni)
+import '@fontsource/grenze-gotisch/latin-500.css';
+import '@fontsource/grenze-gotisch/latin-700.css';
+import '@fontsource/grenze/latin-400.css';
+import '@fontsource/grenze/latin-400-italic.css';
+import '@fontsource/grenze/latin-600.css';
+import '@fontsource/grenze/latin-700.css';
 import './styles/theme.css';
 
 initInstall();

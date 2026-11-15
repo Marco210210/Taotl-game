@@ -55,3 +55,9 @@ Formato: **decisione** — perché — costo se sbagliata.
 - **Le carte lecite per la preselezione le calcola il client** con `legalCards` del motore sulla mia mano e sul seme della presa in corso (già nella vista); il server continua a validare la giocata, quindi un errore del client al massimo fa rifiutare la carta.
 - **Chi apre la presa non preseleziona, nemmeno durante la dichiarazione o la pausa di fine presa**: la carta di apertura è una scelta libera, e senza la carta del primo di mano non si sa che cosa sarà lecito.
 - **Nuovo indirizzo `taotl-game.duckdns.org`**: il filtro antiphishing di TIM bloccava i sottodomini di `sslip.io` (usati spesso per siti malevoli); il vecchio indirizzo rimanda al nuovo con un 301. Un dominio vero si sceglierà insieme al nome definitivo.
+
+## Blocco di TIM Safe Web (2026-11-15, DEPLOY)
+- **Causa probabile: dominio appena creato.** `taotl-game.duckdns.org` è nato il 2026-11-15, `smazziamoci.duckdns.org` (non bloccato, stesso server) esiste dal 2026-09-29. I resolver pubblici con filtro (Quad9, Cloudflare 1.1.1.2, OpenDNS FamilyShield, AdGuard, CleanBrowsing) non bloccano nessuno dei due.
+- **Secondo indirizzo `taotl.smazziamoci.duckdns.org`**: `duckdns.org` è nella Public Suffix List, quindi per molti filtri il dominio è `smazziamoci.duckdns.org` e il sottodominio ne eredita la reputazione. Rovescio: se un giorno Taotl venisse segnalato, potrebbe trascinare Smazziamoci.
+- **Niente redirect dal vecchio `sslip.io`** (risponde 410): un rimando da un dominio segnalato verso uno nuovo è tipico dei siti di phishing.
+- **Sito "pulito"**: font serviti da noi (via Google Fonts), CSP rigorosa, `robots.txt`, testo `noscript`, niente `X-Powered-By`; un test e2e verifica che non partano richieste esterne e che la CSP non blocchi nulla.

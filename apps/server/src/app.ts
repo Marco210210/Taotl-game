@@ -38,6 +38,34 @@ export function setStaticHeaders(res: { setHeader(name: string, value: string): 
   if (name === 'sw.js') res.setHeader('Service-Worker-Allowed', '/');
 }
 
+/**
+ * Politica di sicurezza dei contenuti: tutto dal nostro dominio, niente script esterni o in linea,
+ * niente iframe. Insieme agli altri header rende il sito "pulito" per i filtri antiphishing.
+ */
+export const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "manifest-src 'self'",
+  "worker-src 'self'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
+export function setSecurityHeaders(res: { setHeader(name: string, value: string): unknown }): void {
+  res.setHeader('Content-Security-Policy', CONTENT_SECURITY_POLICY);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+}
+
 /** apps/client/dist, relativo a apps/server/src (dev) e apps/server/dist (bundle). */
 function clientDist(): string {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
@@ -45,6 +73,11 @@ function clientDist(): string {
 
 export function createApp(cfg: ServerConfig, deps: { rng?: () => number } = {}): App {
   const expressApp = express();
+  expressApp.disable('x-powered-by');
+  expressApp.use((_req, res, next) => {
+    setSecurityHeaders(res);
+    next();
+  });
   const httpServer = createServer(expressApp);
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 

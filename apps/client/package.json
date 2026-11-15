@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/grenze": "^5.3.0",
+    "@fontsource/grenze-gotisch": "^5.3.0",
     "@taotl/engine": "workspace:*",
     "@taotl/protocol": "workspace:*",
     "react": "^18.3.1",

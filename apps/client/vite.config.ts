@@ -57,16 +57,6 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: { cacheName: 'taotl-pages', networkTimeoutSeconds: 4, expiration: { maxEntries: 20 } },
           },
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'taotl-font-css' },
-          },
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
-            handler: 'CacheFirst',
-            options: { cacheName: 'taotl-fonts', expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 3600 }, cacheableResponse: { statuses: [0, 200] } },
-          },
         ],
       },
       devOptions: { enabled: false },

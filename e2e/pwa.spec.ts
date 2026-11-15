@@ -130,3 +130,43 @@ test('su iPhone il pulsante apre le istruzioni "Condividi → Aggiungi alla sche
     await context.close();
   }
 });
+
+test('sito "pulito" per i filtri: header di sicurezza, nessuna richiesta esterna, nessuna violazione CSP', async ({ browser, request }) => {
+  const res = await request.get('/');
+  const h = res.headers();
+  expect(h['content-security-policy']).toContain("script-src 'self'");
+  expect(h['content-security-policy']).toContain("frame-ancestors 'none'");
+  expect(h['x-frame-options']).toBe('DENY');
+  expect(h['x-content-type-options']).toBe('nosniff');
+  expect(h['x-powered-by']).toBeUndefined();
+  expect((await request.get('/robots.txt')).ok()).toBe(true);
+  expect(await res.text()).toContain('<noscript>');
+
+  const a = await newPlayer(browser);
+  const page = a.page;
+  const external: string[] = [];
+  const violations: string[] = [];
+  page.on('request', (r) => {
+    const u = new URL(r.url());
+    if (!['localhost', '127.0.0.1'].includes(u.hostname) && !u.protocol.startsWith('data') && !u.protocol.startsWith('blob')) external.push(r.url());
+  });
+  page.on('console', (m) => {
+    if (/Content Security Policy|Refused to/i.test(m.text())) violations.push(m.text());
+  });
+  try {
+    await page.goto('/');
+    await page.evaluate(() => document.addEventListener('securitypolicyviolation', (e) => console.error('Refused to ' + e.violatedDirective + ' ' + e.blockedURI)));
+    await page.getByTestId('input-nickname').fill('Anna');
+    await page.getByTestId('btn-create').click();
+    await page.getByTestId('btn-add-bot').click();
+    await page.getByTestId('btn-start').click();
+    await expect(page.getByTestId('table')).toBeVisible();
+    await expect(page.locator('[data-testid="hand"] [data-testid="card"]').first()).toBeVisible();
+    // i font sono quelli nostri e sono caricati davvero
+    expect(await page.evaluate(async () => (await document.fonts.ready, [...document.fonts].some((f) => f.family.includes('Grenze') && f.status === 'loaded')))).toBe(true);
+    expect(external).toEqual([]);
+    expect(violations).toEqual([]);
+  } finally {
+    await a.context.close();
+  }
+});
