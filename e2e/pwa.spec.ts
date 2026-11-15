@@ -140,7 +140,14 @@ test('sito "pulito" per i filtri: header di sicurezza, nessuna richiesta esterna
   expect(h['x-content-type-options']).toBe('nosniff');
   expect(h['x-powered-by']).toBeUndefined();
   expect((await request.get('/robots.txt')).ok()).toBe(true);
-  expect(await res.text()).toContain('<noscript>');
+  // testo leggibile anche senza JavaScript (filtri, motori di ricerca) e anteprima del link
+  const html = await res.text();
+  expect(html).toContain('<noscript>');
+  expect(html).toMatch(/<main class="intro">[\s\S]*Crea una stanza/);
+  expect(html).toContain('property="og:title"');
+  const sitemap = await request.get('/sitemap.xml');
+  expect(sitemap.ok()).toBe(true);
+  expect(await sitemap.text()).toContain('<urlset');
 
   const a = await newPlayer(browser);
   const page = a.page;

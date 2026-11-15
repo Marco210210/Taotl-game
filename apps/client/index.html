@@ -15,10 +15,41 @@
     <meta name="apple-mobile-web-app-title" content="Taotl" />
     <meta name="application-name" content="Il Taotl" />
     <meta name="format-detection" content="telephone=no" />
-    <title>Il Taotl</title>
+    <title>Il Taotl · gioco di carte online con gli amici</title>
+    <link rel="canonical" href="https://taotl-game.duckdns.org/" />
+    <!-- anteprima del link (WhatsApp, Telegram, social) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="it_IT" />
+    <meta property="og:site_name" content="Il Taotl" />
+    <meta property="og:title" content="Il Taotl · gioco di carte online con gli amici" />
+    <meta property="og:description" content="Crea una stanza, manda il link agli amici e giocate: da 2 a 12 giocatori, bot compresi." />
+    <meta property="og:url" content="https://taotl-game.duckdns.org/" />
+    <meta property="og:image" content="https://taotl-game.duckdns.org/icons/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="robots" content="index, follow" />
+    <!-- schermata iniziale finché parte l'app; è anche il testo che leggono i filtri senza JavaScript -->
+    <style>
+      html { background: #1f140d; }
+      .intro { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; padding: 16px; box-sizing: border-box; color: #fbfaf5; font: 16px/1.4 Georgia, serif; text-align: center; }
+      .intro h1 { margin: 0; font-size: 2.4rem; color: #f3d012; }
+      .intro p, .intro ul { margin: 0; max-width: 36rem; }
+      .intro ul { padding: 0; list-style: none; opacity: 0.8; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="intro">
+        <h1>Il Taotl</h1>
+        <p>Il gioco di carte Il Taotl, da fare online con gli amici.</p>
+        <ul>
+          <li>Crea una stanza e manda il link a chi vuoi far giocare.</li>
+          <li>Da 2 a 12 giocatori; i posti vuoti si riempiono con i bot.</li>
+          <li>Sei mani: ognuno dichiara quante prese farà, poi si gioca.</li>
+        </ul>
+      </main>
+    </div>
     <noscript><p>Il Taotl è un gioco di carte da fare online con gli amici. Per giocare serve JavaScript.</p></noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
