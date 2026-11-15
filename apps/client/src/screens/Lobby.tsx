@@ -39,7 +39,7 @@ export function Lobby({ view, addBot, kick, reorder, start }: { view: RoomView }
     copiedTimer.current = setTimeout(() => setCopied(false), 1800);
   };
   const share = async () => {
-    const data = { title: 'Il Taotl', text: `Vieni a giocare a Il Taotl: stanza ${view.code}`, url: link };
+    const data = { title: 'Il Taotl', text: `Vieni a giocare a Il Taotl! Apri il link, oppure dall'app tocca «Entra» e scrivi il codice ${view.code}`, url: link };
     if (typeof navigator.share === 'function' && (!navigator.canShare || navigator.canShare(data))) {
       try {
         await navigator.share(data);

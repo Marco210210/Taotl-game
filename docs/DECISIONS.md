@@ -61,3 +61,9 @@ Formato: **decisione** — perché — costo se sbagliata.
 - **Nessun legame con altri progetti**: Taotl non usa domini o sottodomini di altri progetti (provato e tolto lo stesso giorno su richiesta).
 - **Niente redirect dal vecchio `sslip.io`** (risponde 410): un rimando da un dominio segnalato verso uno nuovo è tipico dei siti di phishing.
 - **Sito "pulito"**: font serviti da noi (via Google Fonts), CSP rigorosa, `robots.txt`, testo `noscript`, niente `X-Powered-By`; un test e2e verifica che non partano richieste esterne e che la CSP non blocchi nulla.
+
+## Ingresso con il codice e link verso l'app (2026-11-15, SPEC §7.1)
+- **Su iOS un link non può aprire l'app web installata**: Apple non offre a queste app né la cattura dei link né gli universal link, e Safari non sa nemmeno se l'app è installata, perché i dati sono separati. Unica strada: entrare nell'app con il codice; la pagina aperta in Safari lo mostra in evidenza.
+- **Ingresso con il codice nella home, accanto a "Crea stanza"**, con lo stesso nickname: la stanza viene verificata subito (`room:join`), quindi un codice sbagliato dà l'errore nella home invece di portare in una pagina vuota.
+- **Il suggerimento "Hai l'app?" compare solo nel browser di telefoni e tablet** (iOS, o puntatore "coarse") e mai nell'app installata o su computer.
+- **Codici in carattere normale invece che gotico** (lobby, campo, suggerimento): in Grenze Gotisch lettere come H, M, G si confondono quando vanno dettate.

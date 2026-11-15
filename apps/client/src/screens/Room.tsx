@@ -36,7 +36,7 @@ export function Room({ code }: { code: string }) {
   const { view, error, needsJoin, join, emit, takenOver, resume, connected } = useRoom(code);
   if (takenOver) return <TakenOver onResume={resume} />;
   if (error === 'room-not-found' || error === 'game-started') return <Failure error={error} />;
-  if (needsJoin) return <Join error={error} onJoin={join} />;
+  if (needsJoin) return <Join code={code} error={error} onJoin={join} />;
   if (error && !view) return <Failure error={error} />;
   if (!view) {
     return (

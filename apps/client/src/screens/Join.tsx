@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { GodFan } from '../components/GodFan';
 import { errorMessage } from '../lib/errors';
-import { enterFullscreenOnTouch } from '../lib/fullscreen';
+import { enterFullscreenOnTouch, isInstalledApp } from '../lib/fullscreen';
+import { isIOS } from '../lib/install';
 
-export function Join({ error, onJoin }: { error: string | null; onJoin: (nickname: string) => Promise<void> }) {
+/** Link aperto nel browser di un telefono/tablet: chi ha l'app installata può entrare da lì con il codice. */
+const inMobileBrowser = (): boolean =>
+  !isInstalledApp() && (isIOS() || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches));
+
+export function Join({ code, error, onJoin }: { code: string; error: string | null; onJoin: (nickname: string) => Promise<void> }) {
   const [nickname, setNickname] = useState('');
   const [busy, setBusy] = useState(false);
   const submit = async () => {
@@ -35,6 +40,11 @@ export function Join({ error, onJoin }: { error: string | null; onJoin: (nicknam
           Entra
         </button>
         {error && <p role="alert">{errorMessage(error)}</p>}
+        {inMobileBrowser() && (
+          <p className="app-hint" data-testid="app-hint">
+            Hai l'app Il Taotl? Aprila, tocca «Entra» e scrivi il codice <strong data-testid="app-hint-code">{code}</strong>
+          </p>
+        )}
       </form>
     </main>
   );

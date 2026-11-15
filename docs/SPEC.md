@@ -216,6 +216,8 @@ Quando si sbaglia, il premio per il rispetto non si conta.
 - **Nessun account** nell'MVP.
 - Chi crea la stanza diventa **host** e ottiene un link con un codice breve (es. `/r/K7QX`).
 - Chi apre il link inserisce un **nickname** ed entra.
+- In alternativa al link, dalla schermata iniziale si entra **con il codice** ("Hai un codice? Entra nella stanza"): basta che qualcuno lo detti. Il campo accetta minuscole, spazi e anche il link intero incollato. Il codice è scritto in un carattere leggibile (non gotico), perché va letto ad alta voce.
+- **Link e app installata**: su iPhone/iPad Apple non permette che un link si apra in un'app web installata, quindi finisce sempre in Safari. Quando un link si apre nel browser di un telefono o tablet, la pagina d'ingresso suggerisce: "Hai l'app Il Taotl? Aprila, tocca «Entra» e scrivi il codice XXXX". Su Android il manifest chiede che i link si aprano nell'app installata (`handle_links`, `launch_handler`). Il testo di "Condividi" contiene anche il codice.
 - L'identità è un **token anonimo** salvato in `localStorage`: ricaricando la pagina si rientra nello stesso posto.
 - L'host può: riordinare i posti, espellere giocatori, **aggiungere bot**, premere **"Inizia"** (da 2 a 12 posti occupati, bot compresi).
 - **Nessun ingresso a partita iniziata**, niente spettatori.

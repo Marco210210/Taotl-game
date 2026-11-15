@@ -22,6 +22,7 @@ const MESSAGES: Record<string, string> = {
   'card-not-playable': 'Carta non giocabile',
   'choice-required': 'Scegli come giocare il Dio',
   'unknown-player': 'Giocatore sconosciuto',
+  'bad-code': 'Scrivi il codice della stanza: 4 caratteri, come ABCD',
   'copy-failed': 'Copia non riuscita: manda agli amici il codice della stanza',
 };
 export const errorMessage = (code: string): string => MESSAGES[code] ?? 'Errore imprevisto';

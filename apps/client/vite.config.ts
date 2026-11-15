@@ -30,6 +30,9 @@ export default defineConfig({
         background_color: BACKGROUND,
         theme_color: THEME,
         categories: ['games', 'entertainment'],
+        // Android/Chrome: i link del gioco si aprono nell'app installata (su iOS Apple non lo permette)
+        handle_links: 'preferred',
+        launch_handler: { client_mode: ['navigate-existing', 'auto'] },
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

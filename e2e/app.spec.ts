@@ -72,3 +72,62 @@ test('"Copia link" mette negli appunti l\'URL della stanza e conferma "Copiato!"
     await a.context.close();
   }
 });
+
+test('entrare con il codice dalla schermata iniziale, senza link', async ({ browser }) => {
+  const a = await newPlayer(browser);
+  const b = await newPlayer(browser);
+  try {
+    const url = await createRoom(a.page, 'Anna');
+    const code = url.split('/r/')[1]!;
+    await b.page.goto('/');
+    await b.page.getByTestId('input-nickname').fill('Bea');
+    // codice sbagliato: messaggio chiaro, si resta nella home
+    await b.page.getByTestId('input-code').fill('zz');
+    await b.page.getByTestId('btn-join-code').click();
+    await expect(b.page.getByRole('alert')).toContainText('codice');
+    await b.page.getByTestId('input-code').fill('ZZZZ');
+    await b.page.getByTestId('btn-join-code').click();
+    await expect(b.page.getByRole('alert')).toHaveText('Stanza non trovata');
+    // codice giusto scritto in minuscolo, con Invio
+    await b.page.getByTestId('input-code').fill(code.toLowerCase());
+    await b.page.getByTestId('input-code').press('Enter');
+    await expect(b.page).toHaveURL(url);
+    await expect(b.page.getByTestId('btn-copy-link')).toBeVisible();
+    await expect(a.page.locator('[data-testid^="seat-"]')).toHaveCount(2);
+    await expect(a.page.getByText('Bea')).toBeVisible();
+    // ricaricando resta dentro (token salvato come per il link)
+    await b.page.reload();
+    await expect(b.page.getByTestId('btn-copy-link')).toBeVisible();
+    await expect(a.page.locator('[data-testid^="seat-"]')).toHaveCount(2);
+  } finally {
+    await a.context.close();
+    await b.context.close();
+  }
+});
+
+test('link aperto nel browser del telefono: suggerisce di entrare dall\'app con il codice', async ({ browser }) => {
+  const a = await newPlayer(browser);
+  const ipad = await browser.newContext({
+    viewport: { width: 1180, height: 820 },
+    userAgent: 'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+    hasTouch: true,
+    isMobile: true,
+  });
+  try {
+    const url = await createRoom(a.page, 'Anna');
+    const code = url.split('/r/')[1]!;
+    const p = await ipad.newPage();
+    await p.goto(url);
+    await expect(p.getByTestId('app-hint')).toContainText('Hai l\'app Il Taotl?');
+    await expect(p.getByTestId('app-hint-code')).toHaveText(code);
+    // su computer niente suggerimento
+    const c = await newPlayer(browser, { width: 1440, height: 900 });
+    await c.page.goto(url);
+    await expect(c.page.getByTestId('btn-join')).toBeVisible();
+    await expect(c.page.getByTestId('app-hint')).toHaveCount(0);
+    await c.context.close();
+  } finally {
+    await a.context.close();
+    await ipad.close();
+  }
+});
